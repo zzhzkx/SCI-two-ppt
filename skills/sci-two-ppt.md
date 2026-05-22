@@ -6,24 +6,26 @@
 
 当用户要求将论文转换为PPT时，按以下10步流程执行：
 
-### Step 1: 解析论文（LLM智能解析）
+### Step 1: 解析论文（LLM智能解析 + 检索式生成）
 
 **流程**：
 1. 调用 `parse_papers` 工具提取原始文本
    - 支持 PDF 和 Word 文档
    - 返回原始文本和基础元数据
 
-2. spawn子Agent智能分析论文
+2. spawn子Agent智能分析论文 + 生成检索式
    ```
    Agent: 论文智能分析
-   description: "分析论文内容，提取结构化信息"
+   description: "分析论文内容，提取结构化信息，生成专业检索式"
    prompt: |
-     你是一个学术论文分析专家。请分析以下论文内容，提取结构化信息。
+     你是一个学术论文分析专家。请分析以下论文内容，提取结构化信息，并生成该领域的专业检索式。
 
      论文原始文本：
      {raw_text}
 
-     请提取：
+     请完成以下任务：
+
+     【任务1：论文内容分析】
      1. 标题（title）
      2. 摘要（abstract）
      3. 研究背景（background）
@@ -33,6 +35,14 @@
      7. 创新点（innovations）- 至少2条
      8. 结论（conclusions）
      9. 图表描述（figures）- 如有
+
+     【任务2：检索式生成】
+     10. 研究领域（research_field）
+     11. 核心关键词（core_keywords）- 5-10个
+     12. 中文检索式（search_queries.chinese）- 3-5个
+     13. 英文检索式（search_queries.english）- 3-5个
+     14. 推荐检索数据库（recommended_databases）
+     15. 相关研究主题（related_topics）
 
      输出JSON格式：
      {
@@ -44,7 +54,33 @@
        "key_findings": ["发现1", "发现2", ...],
        "innovations": ["创新点1", "创新点2", ...],
        "conclusions": "...",
-       "figures": [{"caption": "...", "description": "..."}]
+       "figures": [{"caption": "...", "description": "..."}],
+
+       "research_field": "光学工程/激光雷达/大气遥感",
+       "core_keywords": ["微脉冲激光雷达", "气溶胶", "米氏散射", ...],
+       "search_queries": {
+         "chinese": [
+           "微脉冲激光雷达 AND 气溶胶探测",
+           "双波长激光雷达 AND 大气遥感",
+           ...
+         ],
+         "english": [
+           "micro-pulse lidar AND aerosol detection",
+           "dual-wavelength lidar AND atmospheric remote sensing",
+           ...
+         ]
+       },
+       "recommended_databases": [
+         "Web of Science",
+         "CNKI (中国知网)",
+         "IEEE Xplore",
+         "Google Scholar"
+       ],
+       "related_topics": [
+         "激光雷达系统设计",
+         "大气气溶胶探测",
+         ...
+       ]
      }
 
      请将结果写入：{workspace}/papers/analysis.json
@@ -52,7 +88,12 @@
 
 3. 保存结构化结果到 `workspace/papers/analysis.json`
 
-**产出**：`workspace/papers/analysis.json`（结构化论文分析）
+**产出**：`workspace/papers/analysis.json`（包含论文分析 + 检索式）
+
+**后续使用**：
+- 当用户觉得文献支撑不足时，可使用生成的检索式进行文献补充
+- 使用 `WebSearch` 工具检索相关文献
+- 解析新文献，补充到 `workspace/papers/`
 
 ### Step 2: 收集需求
 与用户对话，收集以下信息：
