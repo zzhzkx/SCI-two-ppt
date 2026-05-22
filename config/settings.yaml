@@ -1,0 +1,13 @@
+# API Configuration
+anthropic:
+  api_key: "YOUR_ANTHROPIC_API_KEY"
+  model: "claude-sonnet-4-20250514"
+
+# Pipeline Settings
+pipeline:
+  max_review_rounds: 3
+  slide_preview_port: 8080
+
+# Output
+output:
+  dir: "./outputs"
