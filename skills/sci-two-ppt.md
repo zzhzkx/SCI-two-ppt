@@ -56,32 +56,32 @@
        "conclusions": "...",
        "figures": [{"caption": "...", "description": "..."}],
 
-       "research_field": "光学工程/激光雷达/大气遥感",
-       "core_keywords": ["微脉冲激光雷达", "气溶胶", "米氏散射", ...],
+       "research_field": "根据论文内容智能识别的研究领域",
+       "core_keywords": ["从论文中提取的核心关键词"],
        "search_queries": {
-         "chinese": [
-           "微脉冲激光雷达 AND 气溶胶探测",
-           "双波长激光雷达 AND 大气遥感",
-           ...
-         ],
-         "english": [
-           "micro-pulse lidar AND aerosol detection",
-           "dual-wavelength lidar AND atmospheric remote sensing",
-           ...
-         ]
+         "chinese": ["基于论文内容生成的中文检索式"],
+         "english": ["Based on paper content generated English queries"]
        },
-       "recommended_databases": [
-         "Web of Science",
-         "CNKI (中国知网)",
-         "IEEE Xplore",
-         "Google Scholar"
-       ],
-       "related_topics": [
-         "激光雷达系统设计",
-         "大气气溶胶探测",
-         ...
-       ]
+       "recommended_databases": ["根据研究领域推荐的数据库"],
+       "related_topics": ["与论文相关的研究主题"]
      }
+
+     注意：
+     - research_field：根据论文实际内容识别，不要预设
+     - core_keywords：从论文中提取核心术语，5-10个
+     - search_queries：基于论文内容生成专业检索式，中英文各3-5个
+     - recommended_databases：根据研究领域推荐适合的数据库
+     - related_topics：与论文研究方向相关的主题
+
+     【检索式生成原则】
+     - 精确性：检索式要能准确反映论文核心内容
+     - 灵活性：不能过于精确导致检索结果太少
+     - 平衡点：使用2-3个核心关键词组合，避免过长的检索式
+     - 示例：
+       ✅ 好的检索式："micro-pulse lidar aerosol" (2-3个关键词)
+       ❌ 太精确："micro-pulse lidar 532nm 1064nm dual-wavelength aerosol detection SPAD" (太长)
+       ❌ 太宽泛："lidar" (太短)
+     - 建议：每个检索式包含2-3个核心概念，用AND连接
 
      请将结果写入：{workspace}/papers/analysis.json
    ```
@@ -228,3 +228,4 @@ Claude 应该:
 5. **主 Agent 负责编排和审查**，不直接执行子任务
 6. **用户交互贯穿全程**，每步都需要确认
 7. **检索式自动生成**：Step 1 时自动生成专业检索式，便于后续文献补充
+8. **检索式平衡原则**：精确但不过于精确，使用2-3个核心关键词
