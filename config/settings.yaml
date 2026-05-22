@@ -11,3 +11,7 @@ pipeline:
 # Output
 output:
   dir: "./outputs"
+
+# Logging
+logging:
+  level: "INFO"

@@ -51,4 +51,6 @@ def _from_dict(data: dict) -> Config:
         cfg.max_review_rounds = data["pipeline"].get("max_review_rounds", cfg.max_review_rounds)
     if "output" in data:
         cfg.output_dir = data["output"].get("dir", cfg.output_dir)
+    if "logging" in data:
+        cfg.log_level = data["logging"].get("level", cfg.log_level)
     return cfg
