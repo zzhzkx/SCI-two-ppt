@@ -446,5 +446,141 @@ def cleanup_workspace(workspace_path: str = "") -> str:
     }, ensure_ascii=False, indent=2)
 
 
+@mcp.tool()
+def generate_preview(slide_data: str, slide_index: int, workspace_path: str = "") -> str:
+    """生成幻灯片预览（HTML/图片/PPT）。
+
+    Input: slide_data - 幻灯片数据JSON, slide_index - 幻灯片索引
+    Output: JSON {
+        "html_path": str,
+        "image_path": str,
+        "pptx_path": str
+    }
+    """
+    from src.generators.preview.preview_generator import PreviewGenerator
+
+    ws = Workspace(workspace_path or config.default_workspace)
+    ws.ensure_exists()
+
+    try:
+        preview_gen = PreviewGenerator(str(ws.path / "preview"))
+        slide_dict = json.loads(slide_data)
+
+        html_path = preview_gen.generate_html_preview(slide_dict, slide_index)
+
+        return json.dumps({
+            "html_path": html_path,
+            "image_path": "",
+            "pptx_path": ""
+        }, ensure_ascii=False, indent=2)
+    except Exception as e:
+        return json.dumps({"error": str(e)}, ensure_ascii=False, indent=2)
+
+
+@mcp.tool()
+def detect_modifications(original: str, modified: str, workspace_path: str = "") -> str:
+    """检测PPTX文件之间的变化。
+
+    Input: original - 原始PPTX路径, modified - 修改后PPTX路径
+    Output: JSON {
+        "changes": list,
+        "summary": dict,
+        "has_significant_changes": bool
+    }
+    """
+    from src.generators.feedback.modification_detector import ModificationDetector
+
+    ws = Workspace(workspace_path or config.default_workspace)
+    ws.ensure_exists()
+
+    try:
+        detector = ModificationDetector()
+        changes = detector.detect_changes(original, modified)
+        summary = detector.get_changes_summary()
+        has_significant = detector.has_significant_changes()
+
+        # 导出变化到文件
+        changes_path = ws.path / "feedback" / "detected_changes.json"
+        changes_path.parent.mkdir(parents=True, exist_ok=True)
+        detector.export_changes(str(changes_path))
+
+        return json.dumps({
+            "changes": changes,
+            "summary": summary,
+            "has_significant_changes": has_significant,
+            "changes_file": str(changes_path)
+        }, ensure_ascii=False, indent=2)
+    except Exception as e:
+        return json.dumps({"error": str(e)}, ensure_ascii=False, indent=2)
+
+
+@mcp.tool()
+def learn_feedback(changes_json: str, slide_index: int, workspace_path: str = "") -> str:
+    """从用户修改中学习反馈模式。
+
+    Input: changes_json - 变化JSON, slide_index - 幻灯片索引
+    Output: JSON {
+        "feedback_summary": dict,
+        "recommendations": dict
+    }
+    """
+    from src.generators.feedback.feedback_learner import FeedbackLearner
+
+    ws = Workspace(workspace_path or config.default_workspace)
+    ws.ensure_exists()
+
+    try:
+        learner = FeedbackLearner(str(ws.path))
+        changes = json.loads(changes_json)
+
+        learner.learn_from_changes(changes, slide_index)
+        learner.save_feedback()
+
+        summary = learner.get_feedback_summary()
+        report = learner.generate_feedback_report()
+
+        # 保存报告
+        report_path = ws.path / "feedback" / "feedback_report.md"
+        report_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(report_path, "w", encoding="utf-8") as f:
+            f.write(report)
+
+        return json.dumps({
+            "feedback_summary": summary,
+            "report_path": str(report_path)
+        }, ensure_ascii=False, indent=2)
+    except Exception as e:
+        return json.dumps({"error": str(e)}, ensure_ascii=False, indent=2)
+
+
+@mcp.tool()
+def get_feedback_patterns(workspace_path: str = "") -> str:
+    """获取反馈模式。
+
+    Input: workspace_path - 工作空间路径
+    Output: JSON {
+        "patterns": dict,
+        "history": dict
+    }
+    """
+    from src.generators.feedback.feedback_learner import FeedbackLearner
+
+    ws = Workspace(workspace_path or config.default_workspace)
+    ws.ensure_exists()
+
+    try:
+        learner = FeedbackLearner(str(ws.path))
+        learner.load_feedback()
+
+        summary = learner.get_feedback_summary()
+
+        return json.dumps({
+            "patterns": learner.feedback_patterns,
+            "summary": summary
+        }, ensure_ascii=False, indent=2)
+    except Exception as e:
+        return json.dumps({"error": str(e)}, ensure_ascii=False, indent=2)
+
+
 if __name__ == "__main__":
     mcp.run()
