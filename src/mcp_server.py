@@ -12,6 +12,7 @@ from src.core.config import load_config
 from src.core.workspace import Workspace
 from src.parsers.paper_parser import parse_papers as _parse_papers
 from src.parsers.figure_extractor import extract_figures as _extract_figures
+from src.generators.slide_builder import build_slide as _build_slide
 
 mcp = FastMCP("sci-two-ppt")
 config = load_config()
@@ -292,20 +293,17 @@ def build_slide(
     Input: blueprint - 蓝图YAML, slide_index - 页码(从0开始), modifications - 修改意见
     Output: JSON {
         "slide_index": int,
-        "pptx_path": str,
-        "preview_image": str
+        "pptx_path": str
     }
     """
     ws = Workspace(workspace_path or config.default_workspace)
     ws.ensure_exists()
 
-    # TODO: Implement python-pptx slide building + HTML preview in Milestone 5
-    return json.dumps({
-        "slide_index": slide_index,
-        "pptx_path": str(ws.path / "preview" / f"slide_{slide_index}.pptx"),
-        "preview_image": "",
-        "status": "[Mock] Slide building will be implemented in Milestone 5",
-    }, ensure_ascii=False, indent=2)
+    try:
+        result = asyncio.run(_build_slide(blueprint, slide_index, modifications))
+        return json.dumps(result, ensure_ascii=False, indent=2)
+    except Exception as e:
+        return json.dumps({"error": str(e)}, ensure_ascii=False, indent=2)
 
 
 @mcp.tool()
