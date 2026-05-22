@@ -31,3 +31,6 @@ config/settings.local.yaml
 .env
 outputs/
 workspace/
+
+# Claude Code local settings
+.claude/settings.local.json
