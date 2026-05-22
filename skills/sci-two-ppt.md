@@ -6,10 +6,53 @@
 
 当用户要求将论文转换为PPT时，按以下10步流程执行：
 
-### Step 1: 解析论文
-- 使用 `parse_papers` 工具解析用户提供的论文（支持PDF和Word文档）
-- 使用 `extract_figures` 工具提取图表
-- 将结果保存到 `workspace/papers/analysis.json`
+### Step 1: 解析论文（LLM智能解析）
+
+**流程**：
+1. 调用 `parse_papers` 工具提取原始文本
+   - 支持 PDF 和 Word 文档
+   - 返回原始文本和基础元数据
+
+2. spawn子Agent智能分析论文
+   ```
+   Agent: 论文智能分析
+   description: "分析论文内容，提取结构化信息"
+   prompt: |
+     你是一个学术论文分析专家。请分析以下论文内容，提取结构化信息。
+
+     论文原始文本：
+     {raw_text}
+
+     请提取：
+     1. 标题（title）
+     2. 摘要（abstract）
+     3. 研究背景（background）
+     4. 研究方法（methods）
+     5. 实验结果（results）
+     6. 关键发现（key_findings）- 至少3条
+     7. 创新点（innovations）- 至少2条
+     8. 结论（conclusions）
+     9. 图表描述（figures）- 如有
+
+     输出JSON格式：
+     {
+       "title": "...",
+       "abstract": "...",
+       "background": "...",
+       "methods": "...",
+       "results": "...",
+       "key_findings": ["发现1", "发现2", ...],
+       "innovations": ["创新点1", "创新点2", ...],
+       "conclusions": "...",
+       "figures": [{"caption": "...", "description": "..."}]
+     }
+
+     请将结果写入：{workspace}/papers/analysis.json
+   ```
+
+3. 保存结构化结果到 `workspace/papers/analysis.json`
+
+**产出**：`workspace/papers/analysis.json`（结构化论文分析）
 
 ### Step 2: 收集需求
 与用户对话，收集以下信息：

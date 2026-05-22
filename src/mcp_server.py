@@ -23,22 +23,25 @@ config = load_config()
 
 @mcp.tool()
 def parse_papers(papers: list[str], workspace_path: str = "") -> str:
-    """解析论文PDF，提取结构化内容。
+    """解析论文，提取原始文本（PDF/Word）。
 
-    Input: papers - PDF文件路径列表
+    Input: papers - 论文文件路径列表（支持 .pdf 和 .docx）
     Output: JSON {
         "papers": [{
             "path": str,
-            "title": str,
-            "abstract": str,
-            "methods": str,
-            "results": str,
-            "figures": [{"path": str, "caption": str}],
-            "key_findings": [str],
-            "innovations": [str]
+            "format": "pdf|docx",
+            "raw_text": str,
+            "page_count": int (PDF) | "paragraph_count": int (Word),
+            "word_count": int,
+            "char_count": int
         }],
-        "quality_report": str
+        "errors": [str],
+        "total": int,
+        "failed": int
     }
+
+    注意：此工具只提取原始文本，不做结构分析。
+    结构分析（标题、摘要、关键发现等）应由子Agent完成。
     """
     ws = Workspace(workspace_path or config.default_workspace)
     ws.ensure_exists()
