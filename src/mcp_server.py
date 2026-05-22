@@ -478,6 +478,33 @@ def generate_preview(slide_data: str, slide_index: int, workspace_path: str = ""
 
 
 @mcp.tool()
+def generate_preview_from_pptx(pptx_path: str, slide_index: int, workspace_path: str = "") -> str:
+    """从PPTX文件生成HTML预览（保持与PowerPoint一致）。
+
+    Input: pptx_path - PPTX文件路径, slide_index - 幻灯片索引
+    Output: JSON {
+        "html_path": str,
+        "pptx_path": str
+    }
+    """
+    from src.generators.preview.preview_generator import PreviewGenerator
+
+    ws = Workspace(workspace_path or config.default_workspace)
+    ws.ensure_exists()
+
+    try:
+        preview_gen = PreviewGenerator(str(ws.path / "preview"))
+        html_path = preview_gen.generate_html_from_pptx(pptx_path, slide_index)
+
+        return json.dumps({
+            "html_path": html_path,
+            "pptx_path": pptx_path
+        }, ensure_ascii=False, indent=2)
+    except Exception as e:
+        return json.dumps({"error": str(e)}, ensure_ascii=False, indent=2)
+
+
+@mcp.tool()
 def detect_modifications(original: str, modified: str, workspace_path: str = "") -> str:
     """检测PPTX文件之间的变化。
 
