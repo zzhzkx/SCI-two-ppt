@@ -1,105 +1,134 @@
-# sci-two-ppt: 科研论文转PPT工具
+# sci-two-ppt Skill
 
-将科研论文转换为专业学术PPT的工具。使用 MCP Server 提供的工具，配合 Claude Code 子 Agent 完成整个流程。
+将科研论文转换为专业学术PPT的工具。
 
-## 工作流程（10步）
+## 工作流程
 
-### Step 1: 输入论文
-- 用户提供论文PDF路径
-- 调用 `parse_papers` 工具解析论文
-- 调用 `extract_figures` 工具提取图表
-- 保存结果到 `workspace/papers/analysis.json`
+当用户要求将论文转换为PPT时，按以下10步流程执行：
 
-### Step 2: 多轮询问需求
-- 与用户对话，收集以下信息：
-  - PPT目的（组会/会议/答辩/项目汇报）
-  - 展示时长限制
-  - 听众背景（专家/跨学科/评审）
-  - 展示重点和核心创新点
-  - 风格偏好（简约学术/丰富图解）
-- 将需求保存到 `workspace/requirements.md`
+### Step 1: 解析论文
+- 使用 `parse_papers` 工具解析用户提供的论文（支持PDF和Word文档）
+- 使用 `extract_figures` 工具提取图表
+- 将结果保存到 `workspace/papers/analysis.json`
 
-### Step 3: 构建 goal.md
-- 分析 Step 1+2 的信息，识别缺失部分
-- 通过 WebSearch 补充缺失信息
-- 调用 `build_goal` 工具构建目标文档
-- 保存到 `workspace/goal.md`
+### Step 2: 收集需求
+与用户对话，收集以下信息：
+- PPT用途（组会/会议/答辩/汇报）
+- 展示时长
+- 听众背景
+- 风格偏好
+- 重点展示内容
+- 保存到 `workspace/requirements.md`
+
+### Step 3: 构建目标文档
+- 综合论文解析结果和用户需求
+- 构建详细的PPT目标文档 `workspace/goal.md`
 
 ### Step 4: 批判性审查
-- 以批判视角审查 goal.md
-- 检查完整性、合理性、可行性
-- 与用户确认或修改
+- 审查目标文档的完整性、合理性
+- 与用户确认
 
-### Step 5: 分派子 Agent
-- spawn 多个 Claude Code 子 Agent 执行任务：
-  - **Agent 1**: 论文要点提取 - 深度分析论文核心内容
-  - **Agent 2**: 核心创新点提炼 - 提炼创新点+研究定位
-  - **Agent 3**: 仿真代码优化 - 分析仿真代码
-  - **Agent 4**: 学术配图搜集 - 搜集/优化论文配图
-  - **Agent 5**: 美术图片/icon - 搜集美术素材
-  - **Agent 6**: UI风格设计 - 确定配色、字体、排版
-  - **Agent 7**: 章节结构安排 - 规划PPT章节和节奏
-  - **Agent 8**: 讲解备注 - 为每页写讲解备注
-- 每个 Agent 结果保存到 `workspace/agent_results/`
+### Step 5: 分派子 Agent（关键步骤）
+**必须使用子 Agent 并行执行以下任务：**
 
-### Step 6: 批判审查 + 用户确认
-- 读取所有 Agent 产出
-- 批判性审查一致性、完整性、质量
-- 与用户逐项确认
-- 不满意的部分重新执行对应 Agent
+使用 `Agent` 工具 spawn 以下子 Agent：
 
-### Step 7: 撰写 PPT 制作报告
-- 整合所有确认后的 Agent 产出
-- 调用 `generate_blueprint` 工具生成蓝图
+```
+Agent 1: 论文要点提取
+- description: "提取论文核心内容和关键发现"
+- prompt: "阅读论文解析结果，提取核心内容、关键发现、创新点"
+- 产出: workspace/agent_results/01_paper_keypoints.md
+
+Agent 2: 核心创新点提炼
+- description: "提炼研究创新点"
+- prompt: "分析论文的创新性贡献，提炼核心创新点"
+- 产出: workspace/agent_results/02_innovation_points.md
+
+Agent 3: 仿真代码分析
+- description: "分析仿真内容"
+- prompt: "分析论文中的仿真方法和结果"
+- 产出: workspace/agent_results/03_simulation_code.md
+
+Agent 4: 学术配图搜集
+- description: "搜集需要的图表资源"
+- prompt: "确定PPT需要的图表和配图资源"
+- 产出: workspace/agent_results/04_visual_resources.md
+
+Agent 5: UI风格设计
+- description: "设计PPT视觉风格"
+- prompt: "根据学术规范设计PPT的配色、字体、排版风格"
+- 产出: workspace/agent_results/05_ui_design.md
+
+Agent 6: 章节结构安排
+- description: "规划PPT章节结构"
+- prompt: "设计PPT的章节结构和时间分配"
+- 产出: workspace/agent_results/06_chapter_structure.md
+
+Agent 7: 讲解备注
+- description: "编写每页讲解备注"
+- prompt: "为PPT每一页编写详细的讲解备注"
+- 产出: workspace/agent_results/07_speaker_notes.md
+```
+
+**重要**：这些子 Agent 应该并行执行，每个子 Agent 独立完成任务并将结果写入对应的文件。
+
+### Step 6: 审查与确认
+- 读取所有子 Agent 产出
+- 向用户展示结果摘要
+- 用户确认或要求修改
+
+### Step 7: 生成PPT蓝图
+- 使用 `generate_blueprint` 工具生成详细的PPT蓝图
 - 保存到 `workspace/ppt_blueprint.yaml`
 
-### Step 8: 逐页制作 + PPT 预览
+### Step 8: 逐页制作PPT
 - 对每一页幻灯片：
-  1. 调用 `build_slide` 工具生成单页PPTX
-  2. 用户用 PowerPoint 打开查看
-  3. 用户手动修改后，调用 `diff_pptx` 检测变化
-  4. 根据反馈调整，重新 build 或继续下一页
-- 循环直到所有页确认
+  1. 使用 `build_slide` 工具生成单页PPTX
+  2. 展示给用户预览
+  3. 用户确认或修改
+  4. 循环直到所有页确认
 
-### Step 9: 生成正式 PPTX
-- 调用 `generate_pptx` 工具打包所有幻灯片
+### Step 9: 生成最终PPT
+- 使用 `generate_pptx` 工具打包所有幻灯片
 - 生成到 `workspace/output.pptx`
 
 ### Step 10: 整理文件
-- 调用 `cleanup_workspace` 清理中间文件
-- 保留重要文档和资源
+- 使用 `cleanup_workspace` 清理中间文件
+- 保留重要文档和最终产出
 
 ## MCP 工具清单
 
 | 工具名 | 用途 |
 |--------|------|
-| `parse_papers` | 解析论文PDF |
+| `parse_papers` | 解析论文（PDF/Word） |
 | `extract_figures` | 提取图表 |
-| `read_pptx` | 读取PPTX状态 |
-| `diff_pptx` | 对比PPTX差异 |
-| `build_slide` | 生成单页幻灯片 |
-| `render_preview` | 渲染预览图 |
-| `generate_pptx` | 最终打包 |
-| `cleanup_workspace` | 清理文件 |
 | `build_goal` | 构建目标文档 |
 | `run_subagent` | 调度子Agent |
-| `generate_blueprint` | 蓝图生成 |
+| `generate_blueprint` | 生成PPT蓝图 |
+| `build_slide` | 生成单页幻灯片 |
+| `generate_pptx` | 最终打包 |
+| `read_pptx` | 读取PPTX状态 |
+| `diff_pptx` | 对比PPTX差异 |
 | `get_academic_style` | 学术规范 |
 | `get_slide_template` | 页面模板 |
 | `get_citation_format` | 引用格式 |
 
 ## 使用示例
 
-```
-用户: 帮我把这篇论文做成PPT
-Claude: 好的，请提供论文PDF路径。
-用户: F:\papers\optics_paper.pdf
-Claude: [调用 parse_papers 解析论文]
-        [调用 extract_figures 提取图表]
-        论文解析完成。接下来我需要了解您的PPT需求...
-        [多轮对话收集需求]
-        [构建 goal.md]
-        [分派子Agent]
-        [逐页制作PPT]
-        PPT已生成：workspace/output.pptx
-```
+用户: "帮我把这篇论文做成PPT：F:\papers\paper.pdf"
+
+Claude 应该:
+1. 调用 `parse_papers` 解析论文
+2. 与用户对话收集需求
+3. spawn 7个子 Agent 并行执行任务
+4. 展示子 Agent 结果供用户确认
+5. 逐页生成PPT
+6. 最终打包输出
+
+## 注意事项
+
+1. **子 Agent 必须真正使用 Agent 工具 spawn**，不能模拟
+2. **子 Agent 可以并行执行**，提高效率
+3. **每个子 Agent 独立完成任务**，写入对应文件
+4. **主 Agent 负责编排和审查**，不直接执行子任务
+5. **用户交互贯穿全程**，每步都需要确认

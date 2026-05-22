@@ -2,118 +2,103 @@
 
 AI-powered scientific paper to presentation PPT generator.
 
-## Features
+## 项目结构
 
-- **论文解析**: 自动解析PDF论文，提取标题、摘要、方法、结果、关键发现
-- **图表提取**: 从PDF中提取图片和表格
-- **学术规范库**: 6个学科领域的配色/字体/排版规范
-- **9种页面模板**: 标题页、内容页、图表页、对比页、总结页等
-- **5种引用格式**: IEEE/APA/MLA/Chicago/Harvard
-- **逐页构建**: 像真人一样逐页制作PPT
-- **差异检测**: 自动检测PowerPoint中的手动修改
+```
+F:\sci_two_ppt\
+├── workspace/                    # 用户工作区（核心）
+│   ├── input/                   # 📥 用户输入文件
+│   ├── agent_results/           # 🤖 子Agent输出
+│   ├── papers/                  # 📄 论文解析结果
+│   ├── output/                  # 📤 最终PPT输出
+│   ├── preview/                 # 👁️ 预览文件
+│   └── temp/                    # 🗑️ 临时文件
+│
+├── src/                         # 核心代码
+│   ├── mcp_server.py           # MCP Server入口
+│   ├── core/                   # 核心模块
+│   ├── parsers/                # 论文解析
+│   ├── generators/             # PPT生成
+│   └── styles/                 # 学术规范库
+│
+├── templates/                   # PPT模板
+├── skills/                      # Skill文件
+├── tests/                       # 测试
+├── docs/                        # 文档
+├── .claude/                     # Claude配置
+└── config/                      # 配置文件
+```
+
+## 快速开始
+
+### 1. 输入论文
+将论文文件放入 `workspace/input/` 目录
+
+### 2. 在 Claude Code 中使用
+```
+帮我把 workspace/input/ 下的论文做成PPT
+```
+
+### 3. 查看结果
+- **最终PPT**：`workspace/output/output_final.pptx`
+- **Agent产出**：`workspace/agent_results/`
+- **过程文档**：`workspace/papers/`
+
+## 工作流程（10步）
+
+1. **论文解析** - 解析PDF/Word文档
+2. **需求收集** - 与用户对话收集需求
+3. **目标构建** - 构建goal.md
+4. **批判审查** - 审查目标文档
+5. **子Agent执行** - 并行spawn多个子Agent
+6. **用户确认** - 确认Agent产出
+7. **蓝图生成** - 生成PPT蓝图
+8. **逐页制作** - 生成单页PPT
+9. **最终打包** - 合并为完整PPT
+10. **文件整理** - 清理和归档
+
+## 子Agent并行执行
+
+使用Claude Code的Agent工具spawn独立会话：
+- **论文要点提取** - 分析论文核心内容
+- **创新点提炼** - 提炼研究创新性
+- **UI风格设计** - 设计PPT视觉风格
+- **章节结构安排** - 规划PPT结构
+- **讲解备注编写** - 编写演讲备注
+
+## MCP工具
+
+| 工具名 | 用途 |
+|--------|------|
+| parse_papers | 解析论文（PDF/Word） |
+| extract_figures | 提取图表 |
+| build_slide | 生成单页PPT |
+| generate_pptx | 最终打包 |
+| get_academic_style | 学术规范 |
+| get_slide_template | 页面模板 |
 
 ## 安装
 
 ```bash
-# 克隆仓库
 git clone https://github.com/zzhzkx/SCI-two-ppt.git
 cd SCI-two-ppt
-
-# 安装依赖
 pip install -r requirements.txt
-
-# 配置API密钥
-cp config/settings.yaml config/settings.local.yaml
-# 编辑 settings.local.yaml 填入你的 API key
 ```
 
-## 在 Claude Code 中使用
+## 配置MCP Server
 
-### 配置 MCP Server
-
-在 Claude Code 设置中添加:
-
+在Claude Code设置中添加：
 ```json
 {
   "mcpServers": {
     "sci-two-ppt": {
       "command": "python",
       "args": ["-m", "src.mcp_server"],
-      "cwd": "/path/to/SCI-two-ppt"
+      "cwd": "F:\\sci_two_ppt"
     }
   }
 }
 ```
-
-### 使用方法
-
-1. 在 Claude Code 中说: "帮我把这篇论文做成PPT"
-2. 提供论文PDF路径
-3. Claude 会自动执行10步工作流:
-   - 解析论文
-   - 询问需求
-   - 构建目标文档
-   - 分派子Agent
-   - 逐页生成PPT
-
-## MCP 工具清单
-
-| 工具名 | 用途 |
-|--------|------|
-| `parse_papers` | 解析论文PDF |
-| `extract_figures` | 提取图表 |
-| `read_pptx` | 读取PPTX状态 |
-| `diff_pptx` | 对比PPTX差异 |
-| `build_slide` | 生成单页幻灯片 |
-| `render_preview` | 渲染预览图 |
-| `generate_pptx` | 最终打包 |
-| `cleanup_workspace` | 清理文件 |
-| `get_academic_style` | 学术规范 |
-| `get_slide_template` | 页面模板 |
-| `get_citation_format` | 引用格式 |
-| `build_goal` | 构建目标文档 |
-| `run_subagent` | 调度子Agent |
-| `generate_blueprint` | 蓝图生成 |
-
-## 项目结构
-
-```
-SCI-two-ppt/
-├── src/
-│   ├── mcp_server.py      # MCP Server 入口
-│   ├── core/              # 核心配置
-│   ├── parsers/           # 论文解析
-│   ├── generators/        # PPT生成
-│   └── styles/            # 学术规范库
-├── templates/             # PPT模板
-├── skills/                # Skill文件
-├── tests/                 # 测试
-└── docs/                  # 文档
-```
-
-## 运行测试
-
-```bash
-python tests/test_e2e.py
-```
-
-## 学术规范库
-
-支持的领域:
-- `optics` - 光学
-- `physics` - 物理学
-- `chemistry` - 化学
-- `computer_science` - 计算机科学
-- `biology` - 生物学
-- `general` - 通用
-
-## 引用格式
-
-- IEEE - 工程和计算机科学
-- APA - 社会科学
-- MLA - 人文学科
-- Chicago - 历史和艺术
-- Harvard - 英国和澳大利亚
 
 ## License
 

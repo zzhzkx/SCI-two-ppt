@@ -1,6 +1,7 @@
-"""论文PDF解析器 - 基于PyMuPDF提取结构化内容."""
+"""论文解析器 - 支持PDF和Word文档."""
 
 import fitz  # PyMuPDF
+from docx import Document
 from pathlib import Path
 from typing import Optional
 import json
@@ -8,25 +9,13 @@ import re
 
 
 async def parse_papers(papers: list[str]) -> dict:
-    """解析论文PDF，提取结构化内容。
+    """解析论文（支持PDF和Word文档）。
 
     Args:
-        papers: PDF文件路径列表
+        papers: 文件路径列表（支持 .pdf 和 .docx）
 
     Returns:
-        dict: {
-            "papers": [{
-                "path": str,
-                "title": str,
-                "abstract": str,
-                "methods": str,
-                "results": str,
-                "figures": [{"path": str, "caption": str}],
-                "key_findings": list[str],
-                "innovations": list[str]
-            }],
-            "quality_report": str
-        }
+        dict: 解析结果和质量报告
     """
     results = []
     errors = []
@@ -38,23 +27,20 @@ async def parse_papers(papers: list[str]) -> dict:
             errors.append(f"文件不存在: {paper_path}")
             continue
 
-        if p.suffix.lower() != ".pdf":
-            errors.append(f"不是PDF文件: {paper_path}")
-            continue
-
         try:
-            result = await _parse_single_paper(p)
+            if p.suffix.lower() == ".pdf":
+                result = await _parse_pdf(p)
+            elif p.suffix.lower() in [".docx", ".doc"]:
+                result = await _parse_docx(p)
+            else:
+                errors.append(f"不支持的文件格式: {p.suffix}")
+                continue
             results.append(result)
         except Exception as e:
             errors.append(f"解析失败 {paper_path}: {str(e)}")
 
-    # 生成质量报告
     quality_report = _generate_quality_report(results, errors)
-
-    return {
-        "papers": results,
-        "quality_report": quality_report
-    }
+    return {"papers": results, "quality_report": quality_report}
 
 
 async def _parse_single_paper(pdf_path: Path) -> dict:
@@ -81,13 +67,63 @@ async def _parse_single_paper(pdf_path: Path) -> dict:
     return {
         "path": str(pdf_path),
         "title": title,
-        "abstract": abstract[:2000],  # 限制长度
+        "abstract": abstract[:2000],
         "methods": methods[:2000],
         "results": results[:2000],
-        "figures": [],  # 由 figure_extractor 单独处理
+        "figures": [],
         "key_findings": key_findings,
         "innovations": innovations
     }
+
+
+async def _parse_docx(docx_path: Path) -> dict:
+    """解析Word文档."""
+    doc = Document(str(docx_path))
+
+    # 提取全文
+    full_text = "\n".join([para.text for para in doc.paragraphs if para.text.strip()])
+
+    # 提取各部分
+    title = _extract_title_from_docx(doc, docx_path)
+
+    # 支持中英文关键词
+    abstract = _extract_section(full_text, ["abstract", "摘要"])
+    methods = _extract_section(full_text, ["method", "方法", "实验", "实验方法", "二、", "2.", "1.1", "1.2"])
+    results = _extract_section(full_text, ["result", "结果", "实验结果", "结论", "三、", "3."])
+
+    # 提取关键发现和创新点
+    key_findings = _extract_key_findings(full_text)
+    innovations = _extract_innovations(full_text)
+
+    return {
+        "path": str(docx_path),
+        "title": title,
+        "abstract": abstract[:2000],
+        "methods": methods[:2000],
+        "results": results[:2000],
+        "figures": [],
+        "key_findings": key_findings,
+        "innovations": innovations
+    }
+
+
+def _extract_title_from_docx(doc: Document, docx_path: Path) -> str:
+    """从Word文档提取标题."""
+    # 尝试从标题样式提取
+    for para in doc.paragraphs[:20]:
+        if para.style and para.style.name and 'Heading' in para.style.name:
+            if para.text.strip() and len(para.text.strip()) > 10:
+                return para.text.strip()
+
+    # 尝试从第一段非空内容提取
+    for para in doc.paragraphs[:10]:
+        text = para.text.strip()
+        # 跳过空行和太短的行
+        if len(text) > 15 and len(text) < 200 and not text.startswith(('学生', '学号', '专业')):
+            return text
+
+    # 返回文件名
+    return docx_path.stem.replace('-', ' ').replace('_', ' ')
 
 
 def _extract_title(text: str, pdf_path: Path) -> str:
