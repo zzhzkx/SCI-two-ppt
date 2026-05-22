@@ -13,6 +13,9 @@ from src.core.workspace import Workspace
 from src.parsers.paper_parser import parse_papers as _parse_papers
 from src.parsers.figure_extractor import extract_figures as _extract_figures
 from src.generators.slide_builder import build_slide as _build_slide
+from src.styles.academic_styles import get_academic_style as _get_academic_style
+from src.styles.slide_templates import get_slide_template as _get_slide_template
+from src.styles.citation_formats import get_citation_format as _get_citation_format
 
 mcp = FastMCP("sci-two-ppt")
 config = load_config()
@@ -357,115 +360,42 @@ def generate_pptx(
 def get_academic_style(domain: str = "general", workspace_path: str = "") -> str:
     """获取学术PPT规范（配色、字体、排版）。
 
-    Input: domain - 领域(optics/physics/chemistry/computer_science/general)
-    Output: JSON {
-        "primary_color": str,
-        "secondary_color": str,
-        "font_family": str,
-        "font_sizes": {"title": int, "subtitle": int, "body": int},
-        "margins": {"top": int, "bottom": int, "left": int, "right": int}
-    }
+    Input: domain - 领域(optics/physics/chemistry/computer_science/biology/general)
+    Output: JSON with color scheme, fonts, and margin specifications
     """
-    # TODO: Implement academic style library in Milestone 4
-    styles = {
-        "optics": {
-            "primary_color": "#003366",
-            "secondary_color": "#6699CC",
-            "font_family": "Arial",
-            "font_sizes": {"title": 36, "subtitle": 24, "body": 18},
-            "margins": {"top": 1, "bottom": 1, "left": 1.2, "right": 1.2}
-        },
-        "physics": {
-            "primary_color": "#2C3E50",
-            "secondary_color": "#3498DB",
-            "font_family": "Calibri",
-            "font_sizes": {"title": 36, "subtitle": 24, "body": 18},
-            "margins": {"top": 1, "bottom": 1, "left": 1.2, "right": 1.2}
-        },
-        "general": {
-            "primary_color": "#1A5276",
-            "secondary_color": "#2E86C1",
-            "font_family": "Arial",
-            "font_sizes": {"title": 36, "subtitle": 24, "body": 18},
-            "margins": {"top": 1, "bottom": 1, "left": 1.2, "right": 1.2}
-        }
-    }
-
-    style = styles.get(domain, styles["general"])
-    return json.dumps(style, ensure_ascii=False, indent=2)
+    try:
+        result = asyncio.run(_get_academic_style(domain))
+        return json.dumps(result, ensure_ascii=False, indent=2)
+    except Exception as e:
+        return json.dumps({"error": str(e)}, ensure_ascii=False, indent=2)
 
 
 @mcp.tool()
 def get_slide_template(slide_type: str, workspace_path: str = "") -> str:
     """获取页面模板定义。
 
-    Input: slide_type - 页面类型(title/content/chart/conclusion)
-    Output: JSON {
-        "layout": str,
-        "elements": [...],
-        "suggested_duration": int
-    }
+    Input: slide_type - 页面类型(title/content/two_column/chart/image/comparison/bullet_points/conclusion/thank_you)
+    Output: JSON with template layout and element specifications
     """
-    # TODO: Implement slide template library in Milestone 5
-    templates = {
-        "title": {
-            "layout": "title_slide",
-            "elements": ["title", "subtitle", "author", "date"],
-            "suggested_duration": 30
-        },
-        "content": {
-            "layout": "content_slide",
-            "elements": ["title", "content_blocks", "figures"],
-            "suggested_duration": 120
-        },
-        "chart": {
-            "layout": "chart_slide",
-            "elements": ["title", "chart", "explanation"],
-            "suggested_duration": 90
-        },
-        "conclusion": {
-            "layout": "conclusion_slide",
-            "elements": ["title", "key_points", "future_work"],
-            "suggested_duration": 60
-        }
-    }
-
-    template = templates.get(slide_type, templates["content"])
-    return json.dumps(template, ensure_ascii=False, indent=2)
+    try:
+        result = asyncio.run(_get_slide_template(slide_type))
+        return json.dumps(result, ensure_ascii=False, indent=2)
+    except Exception as e:
+        return json.dumps({"error": str(e)}, ensure_ascii=False, indent=2)
 
 
 @mcp.tool()
 def get_citation_format(format_type: str = "IEEE", workspace_path: str = "") -> str:
     """获取引用格式规范。
 
-    Input: format_type - 格式(IEEE/APA/MLA)
-    Output: JSON {
-        "inline_format": str,
-        "reference_format": str,
-        "examples": [str]
-    }
+    Input: format_type - 格式(IEEE/APA/MLA/Chicago/Harvard)
+    Output: JSON with citation format specifications and examples
     """
-    # TODO: Implement citation format library in Milestone 4
-    formats = {
-        "IEEE": {
-            "inline_format": "[{number}]",
-            "reference_format": "{author}, \"{title},\" {journal}, vol. {volume}, no. {issue}, pp. {pages}, {year}.",
-            "examples": ["[1] A. Author, \"Title,\" Journal, vol. 1, no. 2, pp. 10-20, 2024."]
-        },
-        "APA": {
-            "inline_format": "({author}, {year})",
-            "reference_format": "{author} ({year}). {title}. {journal}, {volume}({issue}), {pages}.",
-            "examples": ["Author, A. (2024). Title. Journal, 1(2), 10-20."]
-        },
-        "MLA": {
-            "inline_format": "({author} {page})",
-            "reference_format": "{author}. \"{title}.\" {journal}, vol. {volume}, no. {issue}, {year}, pp. {pages}.",
-            "examples": ["Author, A. \"Title.\" Journal, vol. 1, no. 2, 2024, pp. 10-20."]
-        }
-    }
-
-    fmt = formats.get(format_type, formats["IEEE"])
-    return json.dumps(fmt, ensure_ascii=False, indent=2)
+    try:
+        result = asyncio.run(_get_citation_format(format_type))
+        return json.dumps(result, ensure_ascii=False, indent=2)
+    except Exception as e:
+        return json.dumps({"error": str(e)}, ensure_ascii=False, indent=2)
 
 
 @mcp.tool()
