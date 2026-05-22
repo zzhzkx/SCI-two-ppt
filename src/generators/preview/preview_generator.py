@@ -216,6 +216,29 @@ class PreviewGenerator:
         .status.show {{
             display: block;
         }}
+
+        .status.error {{
+            background: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }}
+
+        .connection-status {{
+            margin-top: 10px;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+        }}
+
+        .connection-status.connected {{
+            background: #d4edda;
+            color: #155724;
+        }}
+
+        .connection-status.disconnected {{
+            background: #f8d7da;
+            color: #721c24;
+        }}
     </style>
 </head>
 <body>
@@ -224,6 +247,9 @@ class PreviewGenerator:
             <h1>Slide {slide_index} Preview</h1>
             <div class="meta">
                 <span>Duration: {duration} seconds</span>
+                <div id="connectionStatus" class="connection-status disconnected">
+                    未连接
+                </div>
             </div>
         </div>
 
@@ -254,45 +280,117 @@ class PreviewGenerator:
     </div>
 
     <script>
-        function handleAction(action) {{
-            const status = document.getElementById('status');
-            status.textContent = `Action: ${{action}}`;
-            status.className = 'status show';
+        const SLIDE_INDEX = {slide_index};
+        let ws = null;
 
-            // Send action to parent window or server
-            if (window.parent && window.parent.handleSlideAction) {{
-                window.parent.handleSlideAction({{
-                    slide: {slide_index},
-                    action: action,
-                    timestamp: new Date().toISOString()
-                }});
+        // 连接WebSocket服务器
+        function connectWebSocket() {{
+            const statusDiv = document.getElementById('connectionStatus');
+
+            try {{
+                ws = new WebSocket('ws://localhost:8765');
+
+                ws.onopen = function() {{
+                    statusDiv.textContent = '已连接';
+                    statusDiv.className = 'connection-status connected';
+                    console.log('WebSocket connected');
+                }};
+
+                ws.onmessage = function(event) {{
+                    const data = JSON.parse(event.data);
+                    console.log('Received:', data);
+
+                    if (data.type === 'ack') {{
+                        showStatus(data.message, false);
+                    }} else if (data.type === 'error') {{
+                        showStatus(data.message, true);
+                    }}
+                }};
+
+                ws.onclose = function() {{
+                    statusDiv.textContent = '已断开';
+                    statusDiv.className = 'connection-status disconnected';
+                    console.log('WebSocket disconnected');
+                    // 尝试重连
+                    setTimeout(connectWebSocket, 3000);
+                }};
+
+                ws.onerror = function(error) {{
+                    statusDiv.textContent = '连接错误';
+                    statusDiv.className = 'connection-status disconnected';
+                    console.error('WebSocket error:', error);
+                }};
+            }} catch (e) {{
+                statusDiv.textContent = '连接失败';
+                statusDiv.className = 'connection-status disconnected';
             }}
         }}
 
+        // 发送消息到服务器
+        function sendMessage(data) {{
+            if (ws && ws.readyState === WebSocket.OPEN) {{
+                ws.send(JSON.stringify(data));
+                return true;
+            }} else {{
+                showStatus('未连接到服务器，请稍后重试', true);
+                return false;
+            }}
+        }}
+
+        // 处理按钮操作
+        function handleAction(action) {{
+            const data = {{
+                type: 'action',
+                action: action,
+                slide: SLIDE_INDEX,
+                timestamp: new Date().toISOString()
+            }};
+
+            if (sendMessage(data)) {{
+                showStatus(`Action: ${{action}}`, false);
+            }}
+        }}
+
+        // 提交反馈
         function submitFeedback() {{
             const feedback = document.getElementById('feedbackInput').value;
             if (!feedback.trim()) {{
-                alert('Please enter feedback');
+                showStatus('Please enter feedback', true);
                 return;
             }}
 
-            const status = document.getElementById('status');
-            status.textContent = 'Feedback submitted!';
-            status.className = 'status show';
+            const data = {{
+                type: 'feedback',
+                feedback: feedback,
+                slide: SLIDE_INDEX,
+                timestamp: new Date().toISOString()
+            }};
 
-            // Send feedback to parent window or server
-            if (window.parent && window.parent.handleSlideFeedback) {{
-                window.parent.handleSlideFeedback({{
-                    slide: {slide_index},
-                    feedback: feedback,
-                    timestamp: new Date().toISOString()
-                }});
+            if (sendMessage(data)) {{
+                showStatus('Feedback submitted!', false);
+                document.getElementById('feedbackInput').value = '';
             }}
         }}
 
+        // 清空反馈
         function clearFeedback() {{
             document.getElementById('feedbackInput').value = '';
         }}
+
+        // 显示状态信息
+        function showStatus(message, isError) {{
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = 'status show' + (isError ? ' error' : '');
+
+            // 3秒后自动隐藏
+            setTimeout(() => {{
+                statusDiv.className = 'status';
+            }}, 3000);
+        }}
+
+        // 页面加载时连接WebSocket
+        window.onload = connectWebSocket;
     </script>
 </body>
 </html>"""

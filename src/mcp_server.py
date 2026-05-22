@@ -582,5 +582,70 @@ def get_feedback_patterns(workspace_path: str = "") -> str:
         return json.dumps({"error": str(e)}, ensure_ascii=False, indent=2)
 
 
+@mcp.tool()
+def start_preview_server(port: int = 8765) -> str:
+    """启动预览WebSocket服务器，实现HTML页面与Claude Code的实时通信。
+
+    Input: port - 服务器端口号（默认8765）
+    Output: JSON {
+        "status": str,
+        "port": int,
+        "message": str
+    }
+    """
+    from src.generators.preview.websocket_server import PreviewServer
+    import asyncio
+
+    try:
+        server = PreviewServer(port=port)
+
+        # 在后台启动服务器
+        async def run_server():
+            await server.start()
+
+        # 创建后台任务
+        asyncio.create_task(run_server())
+
+        return json.dumps({
+            "status": "started",
+            "port": port,
+            "message": f"WebSocket服务器已启动在端口 {port}。HTML页面将自动连接。"
+        }, ensure_ascii=False, indent=2)
+    except Exception as e:
+        return json.dumps({"error": str(e)}, ensure_ascii=False, indent=2)
+
+
+@mcp.tool()
+def get_latest_feedback(workspace_path: str = "") -> str:
+    """获取最新的用户反馈（从WebSocket服务器）。
+
+    Input: workspace_path - 工作空间路径
+    Output: JSON {
+        "feedback": list,
+        "total": int
+    }
+    """
+    ws = Workspace(workspace_path or config.default_workspace)
+    feedback_file = ws.path / "feedback" / "feedback_log.json"
+
+    if not feedback_file.exists():
+        return json.dumps({
+            "feedback": [],
+            "total": 0,
+            "message": "暂无反馈"
+        }, ensure_ascii=False, indent=2)
+
+    try:
+        with open(feedback_file, "r", encoding="utf-8") as f:
+            feedback_log = json.load(f)
+
+        return json.dumps({
+            "feedback": feedback_log[-10:],  # 最近10条
+            "total": len(feedback_log)
+        }, ensure_ascii=False, indent=2)
+    except Exception as e:
+        return json.dumps({"error": str(e)}, ensure_ascii=False, indent=2)
+
+
 if __name__ == "__main__":
     mcp.run()
