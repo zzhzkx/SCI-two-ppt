@@ -6,10 +6,53 @@
 
 当用户要求将论文转换为PPT时，按以下10步流程执行：
 
-### Step 1: 解析论文
-- 使用 `parse_papers` 工具解析用户提供的论文（支持PDF和Word文档）
-- 使用 `extract_figures` 工具提取图表
-- 将结果保存到 `workspace/papers/analysis.json`
+### Step 1: 解析论文（LLM智能解析）
+
+**流程**：
+1. 调用 `parse_papers` 工具提取原始文本
+   - 支持 PDF 和 Word 文档
+   - 返回原始文本和基础元数据
+
+2. spawn子Agent智能分析论文
+   ```
+   Agent: 论文智能分析
+   description: "分析论文内容，提取结构化信息"
+   prompt: |
+     你是一个学术论文分析专家。请分析以下论文内容，提取结构化信息。
+
+     论文原始文本：
+     {raw_text}
+
+     请提取：
+     1. 标题（title）
+     2. 摘要（abstract）
+     3. 研究背景（background）
+     4. 研究方法（methods）
+     5. 实验结果（results）
+     6. 关键发现（key_findings）- 至少3条
+     7. 创新点（innovations）- 至少2条
+     8. 结论（conclusions）
+     9. 图表描述（figures）- 如有
+
+     输出JSON格式：
+     {
+       "title": "...",
+       "abstract": "...",
+       "background": "...",
+       "methods": "...",
+       "results": "...",
+       "key_findings": ["发现1", "发现2", ...],
+       "innovations": ["创新点1", "创新点2", ...],
+       "conclusions": "...",
+       "figures": [{"caption": "...", "description": "..."}]
+     }
+
+     请将结果写入：{workspace}/papers/analysis.json
+   ```
+
+3. 保存结构化结果到 `workspace/papers/analysis.json`
+
+**产出**：`workspace/papers/analysis.json`（结构化论文分析）
 
 ### Step 2: 收集需求
 与用户对话，收集以下信息：
@@ -100,7 +143,7 @@ Agent 7: 讲解备注
 
 | 工具名 | 用途 |
 |--------|------|
-| `parse_papers` | 解析论文（PDF/Word） |
+| `parse_papers` | 提取论文原始文本（PDF/Word） |
 | `extract_figures` | 提取图表 |
 | `build_goal` | 构建目标文档 |
 | `run_subagent` | 调度子Agent |
@@ -115,20 +158,22 @@ Agent 7: 讲解备注
 
 ## 使用示例
 
-用户: "帮我把这篇论文做成PPT：F:\papers\paper.pdf"
+用户: "帮我把这篇论文做成PPT：F:\\papers\\paper.pdf"
 
 Claude 应该:
-1. 调用 `parse_papers` 解析论文
-2. 与用户对话收集需求
-3. spawn 7个子 Agent 并行执行任务
-4. 展示子 Agent 结果供用户确认
-5. 逐页生成PPT
-6. 最终打包输出
+1. 调用 `parse_papers` 提取原始文本
+2. spawn子Agent智能分析论文
+3. 与用户对话收集需求
+4. spawn 7个子 Agent 并行执行任务
+5. 展示子 Agent 结果供用户确认
+6. 逐页生成PPT
+7. 最终打包输出
 
 ## 注意事项
 
-1. **子 Agent 必须真正使用 Agent 工具 spawn**，不能模拟
-2. **子 Agent 可以并行执行**，提高效率
-3. **每个子 Agent 独立完成任务**，写入对应文件
-4. **主 Agent 负责编排和审查**，不直接执行子任务
-5. **用户交互贯穿全程**，每步都需要确认
+1. **论文解析使用子Agent**：不要用正则表达式，用LLM智能分析
+2. **子 Agent 必须真正使用 Agent 工具 spawn**，不能模拟
+3. **子 Agent 可以并行执行**，提高效率
+4. **每个子 Agent 独立完成任务**，写入对应文件
+5. **主 Agent 负责编排和审查**，不直接执行子任务
+6. **用户交互贯穿全程**，每步都需要确认
