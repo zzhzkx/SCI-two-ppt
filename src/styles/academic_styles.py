@@ -67,7 +67,9 @@ async def get_academic_style(domain: str = "general") -> dict:
     Returns:
         dict: 配色/字体/排版规范
     """
-    style = ACADEMIC_STYLES.get(domain, ACADEMIC_STYLES["general"])
+    if domain not in ACADEMIC_STYLES:
+        domain = "general"
+    style = ACADEMIC_STYLES[domain]
     return {
         "domain": domain,
         **style
