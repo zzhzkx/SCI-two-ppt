@@ -56,32 +56,22 @@
        "conclusions": "...",
        "figures": [{"caption": "...", "description": "..."}],
 
-       "research_field": "光学工程/激光雷达/大气遥感",
-       "core_keywords": ["微脉冲激光雷达", "气溶胶", "米氏散射", ...],
+       "research_field": "根据论文内容智能识别的研究领域",
+       "core_keywords": ["从论文中提取的核心关键词"],
        "search_queries": {
-         "chinese": [
-           "微脉冲激光雷达 AND 气溶胶探测",
-           "双波长激光雷达 AND 大气遥感",
-           ...
-         ],
-         "english": [
-           "micro-pulse lidar AND aerosol detection",
-           "dual-wavelength lidar AND atmospheric remote sensing",
-           ...
-         ]
+         "chinese": ["基于论文内容生成的中文检索式"],
+         "english": ["Based on paper content generated English queries"]
        },
-       "recommended_databases": [
-         "Web of Science",
-         "CNKI (中国知网)",
-         "IEEE Xplore",
-         "Google Scholar"
-       ],
-       "related_topics": [
-         "激光雷达系统设计",
-         "大气气溶胶探测",
-         ...
-       ]
+       "recommended_databases": ["根据研究领域推荐的数据库"],
+       "related_topics": ["与论文相关的研究主题"]
      }
+
+     注意：
+     - research_field：根据论文实际内容识别，不要预设
+     - core_keywords：从论文中提取核心术语，5-10个
+     - search_queries：基于论文内容生成专业检索式，中英文各3-5个
+     - recommended_databases：根据研究领域推荐适合的数据库
+     - related_topics：与论文研究方向相关的主题
 
      请将结果写入：{workspace}/papers/analysis.json
    ```
