@@ -115,9 +115,9 @@
 ### 检索式示例
 ```
 中文：
-- 微脉冲激光雷达 AND 气溶胶探测
-- 双波长激光雷达 AND 大气遥感
-- Mie散射 AND 气溶胶光学特性
+- [中文检索式1]
+- [中文检索式2]
+- [中文检索式3]
 
 English:
 - micro-pulse lidar AND aerosol detection

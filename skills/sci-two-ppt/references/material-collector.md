@@ -9,7 +9,7 @@
 ### 核心职责
 1. **学术示意图搜集** - 从论文和学术资源中搜集相关示意图
 2. **实验结果图表** - 生成数据可视化图表
-3. **技术流程图** - 创建系统架构、实验流程图
+3. **技术流程图** - 创建系统架构、[缺失2]
 4. **对比图表** - 制作与现有研究的对比图表
 5. **素材管理** - 整理、标注、管理搜集的素材
 
@@ -109,14 +109,14 @@ for paper in papers:
 # 使用Python生成图表
 import matplotlib.pyplot as plt
 
-# 生成SNR曲线图
+# 生成[缺失3]
 def generate_snr_curve(data):
     plt.figure(figsize=(10, 6))
     plt.plot(data["range"], data["snr_532"], label="532nm")
     plt.plot(data["range"], data["snr_1064"], label="1064nm")
     plt.xlabel("Range (km)")
-    plt.ylabel("SNR")
-    plt.title("SNR vs Range")
+    plt.ylabel("[Y轴标签]")
+    plt.title("[图表标题]")
     plt.legend()
     plt.savefig("workspace/materials/snr_curve.png")
 ```
@@ -125,7 +125,7 @@ def generate_snr_curve(data):
 ```python
 # 使用工具创建流程图
 def create_system_diagram():
-    # 系统架构图
+    # [缺失1]
     diagram = """
     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
     │   Laser     │────▶│  Optics     │────▶│  Detector   │
@@ -138,7 +138,7 @@ def create_system_diagram():
 ## 素材分类
 
 ### 1. 学术示意图
-- 系统架构图
+- [缺失1]
 - 实验装置图
 - 原理示意图
 - 技术路线图
@@ -151,7 +151,7 @@ def create_system_diagram():
 - 热力图
 
 ### 3. 流程图
-- 实验流程图
+- [缺失2]
 - 算法流程图
 - 系统流程图
 - 决策流程图
@@ -204,7 +204,7 @@ def create_system_diagram():
 ## 素材分类
 
 ### 学术示意图
-1. 系统架构图
+1. [缺失1]
    - 来源：[来源]
    - 说明：[说明]
    - 文件：materials/system_architecture.png
@@ -215,8 +215,8 @@ def create_system_diagram():
    - 文件：materials/experimental_setup.png
 
 ### 数据图表
-1. SNR曲线图
-   - 说明：展示双波长SNR随距离变化
+1. [缺失3]
+   - 说明：[图表说明]
    - 文件：materials/snr_curve.png
    - 生成方式：Python matplotlib
 
@@ -226,7 +226,7 @@ def create_system_diagram():
    - 生成方式：Python matplotlib
 
 ### 流程图
-1. 实验流程图
+1. [缺失2]
    - 说明：展示实验步骤
    - 文件：materials/experiment_flow.png
    - 生成方式：工具生成

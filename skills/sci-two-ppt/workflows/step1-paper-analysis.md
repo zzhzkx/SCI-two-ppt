@@ -172,25 +172,25 @@ def generate_quality_report(analysis):
 ### analysis.json
 ```json
 {
-  "title": "微脉冲激光雷达系统设计",
-  "abstract": "为实现大气气溶胶光学特性的高精度...",
+  "title": "[论文标题]",
+  "abstract": "[摘要示例]",
   "background": "随着全球气候变迁...",
-  "methods": "基于米氏散射理论...",
+  "methods": "[方法示例]",
   "results": "白天探测距离3.5~4.2km...",
   "key_findings": [
-    "双波长协同设计有效提升白天探测鲁棒性",
+    "[创新点1]有效提升白天探测鲁棒性",
     "消光系数与滤光片带宽是主导误差源",
     "1064nm通道鲁棒性优于532nm通道"
   ],
   "innovations": [
-    "双波长同轴收发架构设计",
+    "[创新点示例]",
     "多误差源耦合影响首次系统量化"
   ],
   "conclusions": "系统满足大气监测与云物理研究需求",
   "figures": [
     {
-      "caption": "图3.1 微脉冲激光雷达系统设计",
-      "description": "系统架构图"
+      "caption": "图3.1 [论文标题]",
+      "description": "[缺失1]"
     }
   ],
   "quality_assessment": {
@@ -204,19 +204,19 @@ def generate_quality_report(analysis):
 ### search_queries.json
 ```json
 {
-  "research_field": "光学工程/激光雷达/大气遥感",
+  "research_field": "[研究领域]",
   "core_keywords": [
-    "微脉冲激光雷达",
-    "气溶胶",
-    "米氏散射",
-    "双波长",
+    "[关键词1]",
+    "[关键词2]",
+    "[关键词3]",
+    "[关键词示例]",
     "偏振探测"
   ],
   "search_queries": {
     "chinese": [
-      "微脉冲激光雷达 AND 气溶胶探测",
-      "双波长激光雷达 AND 大气遥感",
-      "Mie散射 AND 气溶胶光学特性"
+      "[中文检索式1]",
+      "[中文检索式2]",
+      "[中文检索式3]"
     ],
     "english": [
       "micro-pulse lidar AND aerosol detection",
@@ -231,8 +231,8 @@ def generate_quality_report(analysis):
     "Google Scholar"
   ],
   "related_topics": [
-    "激光雷达系统设计",
-    "大气气溶胶探测",
+    "[相关主题1]",
+    "[相关主题2]",
     "偏振探测技术"
   ]
 }
