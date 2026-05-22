@@ -1,12 +1,17 @@
 """单页幻灯片生成器 - 基于python-pptx."""
 
 from pptx import Presentation
-from pptx.util import Inches, Pt, Emu
+from pptx.util import Inches, Pt
 from pptx.enum.text import PP_ALIGN
 from pptx.dml.color import RGBColor
 import yaml
 from pathlib import Path
-import json
+
+
+def _hex_to_rgb(hex_color: str) -> tuple:
+    """将十六进制颜色转换为RGB元组."""
+    hex_color = hex_color.lstrip('#')
+    return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
 
 
 async def build_slide(
@@ -15,31 +20,20 @@ async def build_slide(
     modifications: str = "",
     template_path: str = None
 ) -> dict:
-    """根据蓝图生成单页幻灯片。
-
-    Args:
-        blueprint_yaml: 完整蓝图YAML
-        slide_index: 页码（从0开始）
-        modifications: 修改意见
-        template_path: 模板PPTX路径
-
-    Returns:
-        dict: {"pptx_path": str, "slide_index": int}
-    """
-    # 解析蓝图
+    """根据蓝图生成单页幻灯片."""
     blueprint = yaml.safe_load(blueprint_yaml)
 
     if slide_index >= len(blueprint.get("slides", [])):
         raise ValueError(f"Slide index {slide_index} out of range")
 
     slide_def = blueprint["slides"][slide_index]
+    design = slide_def.get("design", {})
 
     # 创建或使用模板
     if template_path and Path(template_path).exists():
         prs = Presentation(template_path)
     else:
         prs = Presentation()
-        # 设置为宽屏 16:9
         prs.slide_width = Inches(13.333)
         prs.slide_height = Inches(7.5)
 
@@ -50,22 +44,25 @@ async def build_slide(
         prs.slides._sldIdLst.remove(prs.slides._sldIdLst[0])
 
     # 添加幻灯片
-    slide_layout = prs.slide_layouts[6]  # 空白布局
+    slide_layout = prs.slide_layouts[6]
     slide = prs.slides.add_slide(slide_layout)
+
+    # 设置背景
+    _apply_background(slide, design)
 
     # 根据类型填充内容
     slide_type = slide_def.get("type", "content")
 
     if slide_type == "title":
-        _build_title_slide(slide, slide_def, prs)
+        _build_title_slide(slide, slide_def, design)
     elif slide_type == "content":
-        _build_content_slide(slide, slide_def, prs)
+        _build_content_slide(slide, slide_def, design)
     elif slide_type == "chart":
-        _build_chart_slide(slide, slide_def, prs)
+        _build_chart_slide(slide, slide_def, design)
     elif slide_type == "conclusion":
-        _build_conclusion_slide(slide, slide_def, prs)
+        _build_conclusion_slide(slide, slide_def, design)
     else:
-        _build_content_slide(slide, slide_def, prs)
+        _build_content_slide(slide, slide_def, design)
 
     # 保存
     output_dir = Path("workspace/preview")
@@ -79,32 +76,60 @@ async def build_slide(
     }
 
 
-def _build_title_slide(slide, slide_def: dict, prs: Presentation):
-    """构建标题页."""
+def _apply_background(slide, design: dict):
+    """应用背景样式."""
+    bg_type = design.get("background", "white")
+
+    if bg_type == "gradient":
+        colors = design.get("background_colors", ["#0D2137", "#1B6CA8"])
+        fill = slide.background.fill
+        fill.gradient()
+        fill.gradient_stops[0].color.rgb = RGBColor(*_hex_to_rgb(colors[0]))
+        fill.gradient_stops[0].position = 0.0
+        fill.gradient_stops[1].color.rgb = RGBColor(*_hex_to_rgb(colors[1]))
+        fill.gradient_stops[1].position = 1.0
+    elif bg_type == "solid":
+        color = design.get("background_color", "#FFFFFF")
+        fill = slide.background.fill
+        fill.solid()
+        fill.fore_color.rgb = RGBColor(*_hex_to_rgb(color))
+
+
+def _build_title_slide(slide, slide_def: dict, design: dict):
+    """构建封面页."""
     title = slide_def.get("title", "")
     subtitle = slide_def.get("subtitle", "")
 
-    # 标题
-    left, top, width, height = Inches(1), Inches(2), Inches(11), Inches(2)
+    title_size = design.get("title_font_size", 48)
+    title_color = design.get("title_color", "#FFFFFF")
+    sub_size = design.get("subtitle_font_size", 28)
+    sub_color = design.get("subtitle_color", "#6699CC")
+
+    # 标题 - 居中
+    left, top, width, height = Inches(1), Inches(2.5), Inches(11), Inches(1.5)
     title_box = slide.shapes.add_textbox(left, top, width, height)
     title_frame = title_box.text_frame
-    title_frame.text = title
+    title_frame.word_wrap = True
     title_para = title_frame.paragraphs[0]
-    title_para.font.size = Pt(40)
+    title_para.text = title
+    title_para.font.size = Pt(title_size)
     title_para.font.bold = True
+    title_para.font.color.rgb = RGBColor(*_hex_to_rgb(title_color))
     title_para.alignment = PP_ALIGN.CENTER
 
-    # 副标题
-    left, top, width, height = Inches(1), Inches(4), Inches(11), Inches(1.5)
+    # 副标题 - 居中
+    left, top, width, height = Inches(1), Inches(4), Inches(11), Inches(1)
     sub_box = slide.shapes.add_textbox(left, top, width, height)
     sub_frame = sub_box.text_frame
-    sub_frame.text = subtitle
+    sub_frame.word_wrap = True
     sub_para = sub_frame.paragraphs[0]
-    sub_para.font.size = Pt(24)
+    sub_para.text = subtitle
+    sub_para.font.size = Pt(sub_size)
+    sub_para.font.color.rgb = RGBColor(*_hex_to_rgb(sub_color))
     sub_para.alignment = PP_ALIGN.CENTER
 
 
-def _build_content_slide(slide, slide_def: dict, prs: Presentation):
+def _build_content_slide(slide, slide_def: dict, design: dict):
     """构建内容页."""
     title = slide_def.get("title", "")
     content = slide_def.get("content", "")
@@ -115,7 +140,7 @@ def _build_content_slide(slide, slide_def: dict, prs: Presentation):
     title_frame = title_box.text_frame
     title_frame.text = title
     title_para = title_frame.paragraphs[0]
-    title_para.font.size = Pt(32)
+    title_para.font.size = Pt(36)
     title_para.font.bold = True
 
     # 内容
@@ -123,37 +148,24 @@ def _build_content_slide(slide, slide_def: dict, prs: Presentation):
     content_box = slide.shapes.add_textbox(left, top, width, height)
     content_frame = content_box.text_frame
     content_frame.word_wrap = True
-
     content_para = content_frame.paragraphs[0]
     content_para.text = content
     content_para.font.size = Pt(18)
 
-    # 添加内容块
-    content_blocks = slide_def.get("content_blocks", [])
-    if content_blocks:
-        content_frame.clear()
-        for block in content_blocks:
-            if isinstance(block, dict) and "text" in block:
-                para = content_frame.add_paragraph()
-                para.text = block["text"]
-                para.font.size = Pt(18)
 
-
-def _build_chart_slide(slide, slide_def: dict, prs: Presentation):
+def _build_chart_slide(slide, slide_def: dict, design: dict):
     """构建图表页."""
     title = slide_def.get("title", "")
     chart_desc = slide_def.get("chart", "")
 
-    # 标题
     left, top, width, height = Inches(0.5), Inches(0.3), Inches(12), Inches(1)
     title_box = slide.shapes.add_textbox(left, top, width, height)
     title_frame = title_box.text_frame
     title_frame.text = title
     title_para = title_frame.paragraphs[0]
-    title_para.font.size = Pt(32)
+    title_para.font.size = Pt(36)
     title_para.font.bold = True
 
-    # 图表描述
     left, top, width, height = Inches(0.5), Inches(1.5), Inches(12), Inches(5.5)
     desc_box = slide.shapes.add_textbox(left, top, width, height)
     desc_frame = desc_box.text_frame
@@ -162,42 +174,15 @@ def _build_chart_slide(slide, slide_def: dict, prs: Presentation):
     desc_para.font.size = Pt(18)
 
 
-def _build_conclusion_slide(slide, slide_def: dict, prs: Presentation):
+def _build_conclusion_slide(slide, slide_def: dict, design: dict):
     """构建总结页."""
     title = slide_def.get("title", "Conclusion")
-    key_points = slide_def.get("key_points", [])
-    future_work = slide_def.get("future_work", "")
 
-    # 标题
-    left, top, width, height = Inches(0.5), Inches(0.3), Inches(12), Inches(1)
+    left, top, width, height = Inches(0.5), Inches(2), Inches(12), Inches(1.5)
     title_box = slide.shapes.add_textbox(left, top, width, height)
     title_frame = title_box.text_frame
-    title_frame.text = title
     title_para = title_frame.paragraphs[0]
-    title_para.font.size = Pt(32)
+    title_para.text = title
+    title_para.font.size = Pt(44)
     title_para.font.bold = True
-
-    # 关键点
-    left, top, width, height = Inches(0.5), Inches(1.5), Inches(12), Inches(3.5)
-    points_box = slide.shapes.add_textbox(left, top, width, height)
-    points_frame = points_box.text_frame
-    points_frame.word_wrap = True
-
-    if key_points:
-        for i, point in enumerate(key_points):
-            if i == 0:
-                para = points_frame.paragraphs[0]
-            else:
-                para = points_frame.add_paragraph()
-            para.text = f"- {point}"
-            para.font.size = Pt(18)
-
-    # 未来工作
-    if future_work:
-        left, top, width, height = Inches(0.5), Inches(5), Inches(12), Inches(2)
-        future_box = slide.shapes.add_textbox(left, top, width, height)
-        future_frame = future_box.text_frame
-        future_frame.text = f"Future Work: {future_work}"
-        future_para = future_frame.paragraphs[0]
-        future_para.font.size = Pt(16)
-        future_para.font.italic = True
+    title_para.alignment = PP_ALIGN.CENTER

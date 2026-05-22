@@ -113,6 +113,7 @@ class PreviewGenerator:
             font-weight: bold;
             color: #003366;
             margin-bottom: 20px;
+            text-align: center;
         }}
 
         .slide-content {{
