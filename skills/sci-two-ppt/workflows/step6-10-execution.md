@@ -78,20 +78,100 @@ for slide_def in blueprint["slides"]:
     # 保存预览
     save_preview(slide, slide_def["index"])
     
-    # 展示给用户
+    # 展示给用户审查
     show_preview_to_user(slide)
     
-    # 用户确认或修改
-    user_feedback = get_user_feedback()
-    if user_feedback:
-        # 根据反馈调整
-        slide = modify_slide(slide, user_feedback)
+    # 等待用户审查和意见
+    user_feedback = wait_for_user_review()
+    
+    # 处理用户意见
+    while user_feedback:
+        if user_feedback.type == "confirm":
+            # 用户确认，继续下一页
+            break
+        elif user_feedback.type == "modify":
+            # 用户提出修改意见
+            slide = modify_slide(slide, user_feedback.content)
+            save_preview(slide, slide_def["index"])
+            show_preview_to_user(slide)
+            user_feedback = wait_for_user_review()
+        elif user_feedback.type == "skip":
+            # 用户跳过，稍后处理
+            mark_as_pending(slide_def["index"])
+            break
+        elif user_feedback.type == "redo":
+            # 用户要求重做
+            slide = build_slide(slide_def, spec_lock)
+            save_preview(slide, slide_def["index"])
+            show_preview_to_user(slide)
+            user_feedback = wait_for_user_review()
 ```
 
-### 8.3 用户交互
-- 每页生成后展示预览
-- 用户可以确认、修改或跳过
-- 修改意见实时反馈
+### 8.3 用户审查交互
+- **每页完成后立即交给用户审查**
+- **用户可以随时提出意见**：
+  - ✅ 确认：这页OK，继续下一页
+  - ✏️ 修改：提出具体修改意见
+  - ⏭️ 跳过：暂时跳过，稍后处理
+  - 🔄 重做：完全重新设计这页
+  - 💬 意见：提出任何意见和建议
+
+### 8.4 意见处理循环
+```
+生成第N页
+    ↓
+展示给用户审查
+    ↓
+用户提出意见 ←────────────┐
+    ↓                      │
+根据意见修改               │
+    ↓                      │
+重新展示给用户审查 ─────────┘
+    ↓
+用户确认 → 继续第N+1页
+```
+
+### 8.5 审查要点
+用户审查时可以关注：
+- **内容准确性**：文字、数据、公式是否正确
+- **视觉效果**：配色、布局、字体是否美观
+- **逻辑流畅**：与前后页是否衔接自然
+- **重点突出**：创新点是否突出展示
+- **时间合理**：内容量是否适合分配的时间
+- **其他意见**：任何想法和建议
+
+### 8.6 修改记录
+```python
+# 记录每页的修改历史
+modification_history = {
+    "slide_1": [
+        {"action": "modify", "content": "标题字号太小", "timestamp": "..."},
+        {"action": "confirm", "timestamp": "..."}
+    ],
+    "slide_2": [
+        {"action": "redo", "content": "重新设计布局", "timestamp": "..."},
+        {"action": "modify", "content": "图片位置调整", "timestamp": "..."},
+        {"action": "confirm", "timestamp": "..."}
+    ]
+}
+```
+
+### 8.7 跳过页面处理
+```python
+# 处理跳过的页面
+pending_slides = get_pending_slides()
+
+if pending_slides:
+    print("还有以下页面未确认：")
+    for slide in pending_slides:
+        print(f"  - 第{slide.index}页: {slide.title}")
+    
+    # 继续处理跳过的页面
+    for slide in pending_slides:
+        show_preview_to_user(slide)
+        user_feedback = wait_for_user_review()
+        # ... 处理用户意见
+```
 
 ## Step 9: 生成最终PPT
 
