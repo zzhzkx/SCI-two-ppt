@@ -24,18 +24,101 @@ MCP Server (工具)
 
 ## 10步工作流
 
-| 步骤 | 角色 | 产出 |
-|------|------|------|
-| Step 1 | Paper Analyzer | analysis.json + search_queries.json |
-| Step 2 | Content Strategist | requirements.md |
-| Step 3 | Content Strategist | goal.md |
-| Step 4 | Professor Reviewer + Quality Reviewer | review_reports |
-| Step 5 | 7个子Agent并行 | agent_results/ + SVG文件 |
-| Step 6 | 用户确认 | 确认/修改意见 |
-| Step 7 | Claude主Agent | blueprint.yaml |
-| Step 8 | SVG Generator + 用户 | 逐页PPT |
-| Step 9 | MCP工具 | output_final.pptx |
-| Step 10 | MCP工具 | 制作报告 |
+| 步骤 | 角色 | 产出 | 审核点 |
+|------|------|------|--------|
+| Step 1 | Paper Analyzer | analysis.json | 论文解析结果是否准确 |
+| Step 2 | Content Strategist | requirements.md | 需求是否完整 |
+| Step 3 | Content Strategist | goal.md | 目标文档是否合理 |
+| Step 4 | Professor + Quality Reviewer | review_reports | 审查建议是否采纳 |
+| Step 5 | 7个子Agent并行 | agent_results/ | 各Agent产出是否满意 |
+| Step 6 | 用户确认 | 确认/修改 | 最终确认 |
+| Step 7 | Claude主Agent | blueprint.yaml | 蓝图是否合理 |
+| Step 8 | SVG Generator | 逐页PPT | 每页都需确认 |
+| Step 9 | MCP工具 | output_final.pptx | 最终PPT确认 |
+| Step 10 | MCP工具 | 制作报告 | 完成确认 |
+
+**重要**：每一步完成后都必须暂停，等待用户审核确认后再继续下一步。
+
+## 审核点说明
+
+### Step 1 完成后
+**审核内容**：论文解析结果
+- 标题、摘要、方法、结果是否准确
+- 关键发现和创新点是否完整
+- 检索式是否合理
+
+**用户确认后**：进入Step 2
+
+### Step 2 完成后
+**审核内容**：需求文档
+- PPT用途、时长、听众是否正确
+- 风格偏好是否明确
+- 重点内容是否清晰
+
+**用户确认后**：进入Step 3
+
+### Step 3 完成后
+**审核内容**：目标文档
+- 章节结构是否合理
+- 时间分配是否合适
+- 核心要点是否突出
+
+**用户确认后**：进入Step 4
+
+### Step 4 完成后
+**审核内容**：审查报告
+- 领域专家审查建议
+- PPT制作师审查建议
+- 需要修改的部分
+
+**用户确认后**：进入Step 5
+
+### Step 5 完成后
+**审核内容**：所有Agent产出
+- 论文要点是否准确
+- 创新点是否突出
+- UI设计是否满意
+- 章节结构是否合理
+- 讲解备注是否完整
+
+**用户确认后**：进入Step 6
+
+### Step 6 完成后
+**审核内容**：最终确认
+- 所有内容是否满意
+- 是否需要补充或修改
+
+**用户确认后**：进入Step 7
+
+### Step 7 完成后
+**审核内容**：PPT蓝图
+- 每页内容是否完整
+- 时间分配是否合理
+- 布局是否合适
+
+**用户确认后**：进入Step 8
+
+### Step 8 完成后
+**审核内容**：每一页PPT
+- 内容是否准确
+- 视觉效果是否满意
+- 是否需要修改
+
+**用户确认后**：进入Step 9
+
+### Step 9 完成后
+**审核内容**：最终PPT
+- 整体效果是否满意
+- 是否需要调整
+
+**用户确认后**：进入Step 10
+
+### Step 10 完成后
+**审核内容**：最终产出
+- PPT文件是否完整
+- 制作报告是否详细
+
+**用户确认后**：流程完成
 
 ## 7个核心角色
 
