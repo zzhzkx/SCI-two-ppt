@@ -5,37 +5,67 @@
 ## 核心架构
 
 ```
-Claude Code (大脑)
-    |
-    +-- 10步工作流编排
-    +-- 多轮对话收集需求
-    +-- 批判性审查
-    +-- 子Agent并行执行
-    |
-    v
-MCP Server (工具)
-    |
-    +-- 论文解析 (parse_papers)
-    +-- SVG生成 (generate_svg_slide)
-    +-- SVG转换 (svg_to_pptx)
-    +-- 质量检查 (check_svg_quality)
-    +-- 预览生成 (generate_preview_from_pptx)
+Claude Code (大脑) → MCP Server (工具) → PPTX输出
 ```
 
 ## 10步工作流
 
-| 步骤 | 角色 | 产出 |
-|------|------|------|
-| Step 1 | Paper Analyzer | analysis.json |
-| Step 2 | Content Strategist | requirements.md |
-| Step 3 | Content Strategist | goal.md |
-| Step 4 | Professor + Quality Reviewer | review_reports |
-| Step 5 | 7个子Agent并行 | agent_results/ |
-| Step 6 | 用户确认 | 确认/修改 |
-| Step 7 | Claude主Agent | blueprint.yaml |
-| Step 8 | SVG Generator | 逐页PPT |
-| Step 9 | MCP工具 | output_final.pptx |
-| Step 10 | MCP工具 | 制作报告 |
+| 步骤 | 角色 | 产出 | 审核点 |
+|------|------|------|--------|
+| Step 1 | Paper Analyzer | analysis.json | 论文解析结果是否准确 |
+| Step 2 | Content Strategist | requirements.md | 需求是否完整 |
+| Step 3 | Content Strategist | goal.md | 目标文档是否合理 |
+| Step 4 | Professor + Quality Reviewer | review_reports | 审查建议是否采纳 |
+| Step 5 | 7个子Agent并行 | agent_results/ | 各Agent产出是否满意 |
+| Step 6 | 用户确认 | 确认/修改 | 最终确认 |
+| Step 7 | Claude主Agent | blueprint.yaml | 蓝图是否合理 |
+| Step 8 | SVG Generator | 逐页PPT | 每页都需确认 |
+| Step 9 | MCP工具 | output_final.pptx | 最终PPT确认 |
+| Step 10 | MCP工具 | 制作报告 | 完成确认 |
+
+**重要**：每一步完成后都必须暂停，等待用户审核确认后再继续下一步。
+
+## 审核点说明
+
+### Step 1 完成后
+- 审核：论文解析结果是否准确
+- 确认后：进入Step 2
+
+### Step 2 完成后
+- 审核：需求文档是否完整
+- 确认后：进入Step 3
+
+### Step 3 完成后
+- 审核：目标文档是否合理
+- 确认后：进入Step 4
+
+### Step 4 完成后
+- 审核：审查建议是否采纳
+- 确认后：进入Step 5
+
+### Step 5 完成后
+- 审核：所有Agent产出是否满意
+- 确认后：进入Step 6
+
+### Step 6 完成后
+- 审核：最终确认
+- 确认后：进入Step 7
+
+### Step 7 完成后
+- 审核：蓝图是否合理
+- 确认后：进入Step 8
+
+### Step 8 完成后
+- 审核：每一页PPT是否满意
+- 确认后：进入Step 9
+
+### Step 9 完成后
+- 审核：最终PPT是否满意
+- 确认后：进入Step 10
+
+### Step 10 完成后
+- 审核：最终产出是否完整
+- 确认后：流程完成
 
 ## 7个核心角色
 
