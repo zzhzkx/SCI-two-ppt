@@ -1,86 +1,134 @@
-# Step 6-10: SVG后处理、转换和最终输出
+# Step 6-10: 审查确认、蓝图生成、逐页制作、最终打包
 
-## Step 6: SVG后处理 + 质量检查
+## Step 6: 审查确认
 
-### 6.1 SVG后处理
-调用 `finalize_svg` 进行后处理：
-- **嵌入图标**: 将 `<use data-icon="..."/>` 替换为实际SVG路径
-- **对齐图像**: 处理 `<image>` 元素的 preserveAspectRatio
-- **展平文本**: 将 `<tspan>` 转换为独立 `<text>` 元素
-- **圆角转路径**: 将 `<rect rx="...">` 转换为 `<path>`
-
-### 6.2 质量检查
-调用 `check_svg_quality` 检查：
-- **XML良构性**: 确保SVG是有效的XML
-- **viewBox检查**: 验证格式为 `0 0 1280 720`
-- **禁止元素检查**: 无 `<style>`、`<script>`、`<foreignObject>` 等
-- **字体安全检查**: 使用PPT预装字体
-- **spec_lock偏差**: 颜色、字体符合规范
-
-### 6.3 检查结果处理
+### 6.1 读取所有Agent产出
+```python
+agent_results = read_directory("workspace/agent_results/")
 ```
-如果检查通过 → 进入Step 7
-如果检查失败 → 返回Step 5修正SVG
-```
+
+### 6.2 展示结果摘要
+向用户展示：
+- 论文要点
+- 创新点
+- UI设计
+- 章节结构
+- 讲解备注
+
+### 6.3 用户确认
+- ✅ 确认通过 → 进入Step 7
+- ❌ 需要修改 → 返回Step 5重新执行相关Agent
 
 ---
 
-## Step 7: SVG转PPTX
+## Step 7: PPT蓝图生成
 
-### 7.1 批量转换
+### 7.1 综合所有信息
 ```python
-# 对每个SVG文件调用转换
-for svg_file in svg_files:
-    result = svg_to_pptx(svg_file, output_pptx)
-    if not result["success"]:
-        # 处理转换错误
-        fix_svg_and_retry(svg_file)
+goal = read_file("workspace/goal.md")
+agent_results = read_directory("workspace/agent_results/")
+ui_design = read_file("workspace/agent_results/05_ui_design.md")
+chapter_structure = read_file("workspace/agent_results/06_chapter_structure.md")
 ```
 
-### 7.2 转换流程
-```
-SVG文件 → finalize_svg后处理 → drawingml_elements转换 → PPTX文件
+### 7.2 生成蓝图
+```yaml
+slides:
+  - index: 0
+    type: title
+    title: "论文标题"
+    subtitle: "作者信息"
+    notes: "开场白"
+    duration_seconds: 30
+    layout: "centered"
+    
+  - index: 1
+    type: content
+    title: "章节标题"
+    content: "内容要点"
+    figure: "figures/background.png"
+    notes: "讲解备注"
+    duration_seconds: 60
+    layout: "left_text_right_image"
 ```
 
-### 7.3 输出
-- `workspace/output/slide_*.pptx` - 单页PPTX文件
+### 7.3 保存蓝图
+保存到 `workspace/papers/blueprint.yaml`
 
 ---
 
-## Step 8: 逐页预览确认
+## Step 8: 逐页制作PPT
 
-### 8.1 生成HTML预览
+### 8.1 判断制作方式
+
+**SVG方式**（复杂页面）：
+- 数据图表
+- 技术示意图
+- 复杂布局
+
+**python-pptx方式**（简单页面）：
+- 纯文字页面
+- 简单布局
+
+### 8.2 SVG制作流程
+
 ```python
-# 从PPTX生成HTML预览（保持样式一致）
-for pptx_file in pptx_files:
-    html_path = generate_preview_from_pptx(pptx_file, slide_index)
+for slide_def in blueprint["slides"]:
+    if needs_svg(slide_def):
+        # 生成SVG代码
+        svg_content = generate_svg(slide_def, spec_lock)
+        
+        # 保存SVG文件
+        svg_path = save_svg(svg_content, slide_def["index"])
+        
+        # 浏览器预览
+        preview_url = open_in_browser(svg_path)
+        
+        # 等待用户确认
+        user_feedback = wait_for_confirmation()
+        
+        if user_feedback.confirmed:
+            # 转换为PPTX
+            pptx_path = svg_to_pptx(svg_path)
+        else:
+            # 根据反馈修改SVG
+            svg_content = modify_svg(svg_content, user_feedback)
+            # 重新走流程
 ```
 
-### 8.2 用户预览
-- 在浏览器中打开HTML预览
-- 检查布局、颜色、字体是否正确
-- 检查图表数据是否准确
+### 8.3 python-pptx制作流程
 
-### 8.3 修改反馈
-```
-用户确认 → 继续下一页
-用户提出修改 → 返回Step 5重新生成SVG
+```python
+for slide_def in blueprint["slides"]:
+    if not needs_svg(slide_def):
+        # 使用python-pptx生成
+        pptx_path = build_slide_python(slide_def, spec_lock)
+        
+        # 生成HTML预览
+        html_path = generate_preview_from_pptx(pptx_path)
+        
+        # 用户确认
+        user_feedback = wait_for_confirmation()
 ```
 
-### 8.4 修改循环
-```
-生成SVG → 转换PPTX → 预览 → 用户反馈
-    ↑                              ↓
-    └──────── 修改意见 ←───────────┘
-```
+### 8.4 用户交互
+
+**SVG方式**：
+- 浏览器预览SVG
+- 用户确认或修改
+- 确认后转换为PPTX
+
+**python-pptx方式**：
+- HTML预览PPTX
+- 用户在PowerPoint中修改
+- 反馈修改意见
 
 ---
 
 ## Step 9: 最终打包
 
-### 9.1 合并幻灯片
+### 9.1 合并所有幻灯片
 ```python
-# 合并所有确认的PPTX文件
 final_pptx = merge_pptx_files(confirmed_slides)
 ```
 
@@ -122,16 +170,18 @@ clean = [
 - 制作时间：xxx
 - 总页数：xxx
 
+## Agent产出统计
+- 论文要点：完成
+- 创新点：完成
+- UI设计：完成
+- 章节结构：完成
+- 讲解备注：完成
+
 ## SVG生成统计
 - 封面页：1页
 - 内容页：N页
 - 图表页：M页
 - 技术示意图：K页
-
-## 质量检查结果
-- 通过率：100%
-- 警告数：0
-- 错误数：0
 
 ## 文件清单
 - final.pptx - 最终PPT
@@ -157,17 +207,17 @@ workspace/
 
 ---
 
-## 关键流程图
+## 完整流程图
 
 ```
-Step 5: 子Agent生成SVG
-    ↓
-Step 6: SVG后处理 + 质量检查
+Step 6: 审查确认
     ↓ (通过)
-Step 7: SVG转PPTX
+Step 7: PPT蓝图生成
     ↓
-Step 8: 预览确认
-    ↓ (用户确认)
+Step 8: 逐页制作PPT
+    ├─ SVG方式：生成SVG → 浏览器预览 → 确认 → 转换PPTX
+    └─ python-pptx方式：直接生成PPTX → 预览 → 确认
+    ↓ (所有页确认)
 Step 9: 最终打包
     ↓
 Step 10: 整理文件
@@ -175,29 +225,29 @@ Step 10: 整理文件
 
 ## 错误处理
 
+### Agent产出不足
+```
+用户反馈：缺少某些内容
+    ↓
+返回Step 5重新执行对应Agent
+    ↓
+补充内容后重新审查
+```
+
 ### SVG质量检查失败
 ```
 check_svg_quality() → 返回错误列表
     ↓
-修正SVG代码（调整颜色、字体、布局）
+修正SVG代码
     ↓
 重新检查
 ```
 
-### SVG转PPTX失败
-```
-svg_to_pptx() → 返回错误
-    ↓
-检查SVG格式
-    ↓
-修正后重新转换
-```
-
-### 用户不满意
+### 用户不满意PPT效果
 ```
 用户反馈修改意见
     ↓
-返回Step 5重新生成SVG
+返回Step 8重新制作
     ↓
-重新走完流程
+根据反馈调整
 ```
