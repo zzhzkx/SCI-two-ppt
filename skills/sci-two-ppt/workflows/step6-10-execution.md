@@ -1,43 +1,21 @@
-# Step 6-10: 制作输出工作流
+# Step 6-10: SVG后处理和最终输出
 
-## Step 8: 逐页制作PPT
+## Step 6: SVG后处理 + 质量检查
+- finalize_svg: 嵌入图标、展平文本
+- svg_quality_checker: 质量检查
 
-### 预览方式
+## Step 7: SVG转PPTX
+- svg_to_pptx: 批量转换
 
-1. **HTML预览**：浏览器中查看，支持交互操作
-2. **图片预览**：生成PNG图片
-3. **PPT预览**：直接用PowerPoint打开
+## Step 8: 预览确认
+- 生成HTML预览
+- 用户确认/修改
 
-### 修改方式
+## Step 9: 最终打包
+- 合并PPTX
 
-1. **对话式修改**：用户通过对话提出修改意见
-2. **标注式修改**：用户在预览中标注修改位置
-3. **手动修改反馈**：用户在PowerPoint中手动修改，系统检测变化
-
-### 反馈学习系统
-
-```python
-# 检测用户手动修改
-changes = detect_changes(original, modified)
-
-# 学习反馈模式
-feedback_patterns = learn_from_feedback(changes, slide_index)
-
-# 生成反馈总结
-summary = generate_feedback_summary(feedback_patterns)
-
-# 应用反馈到后续页面
-blueprint = apply_feedback_to_next_slides(feedback_patterns, blueprint)
-```
-
-### 完整流程
-
-```
-生成第N页 → 预览 → 用户审查 → 修改/确认
-    ↓
-检测手动修改 → 学习反馈 → 生成总结
-    ↓
-应用反馈到后续页面 → 继续第N+1页
-```
+## Step 10: 整理文件
+- 清理中间文件
+- 生成报告
 
 详见完整文档。

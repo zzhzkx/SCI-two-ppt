@@ -2,31 +2,53 @@
 
 将科研论文转换为专业学术PPT的工具。
 
-## 工作流程概览
+## 核心架构
 
 ```
-Step 1: 论文解析 → Step 2: 需求收集 → Step 3: 目标构建
-    ↓                    ↓                    ↓
-Step 4: 双角色审查 → Step 5: 子Agent执行 → Step 6-10: 制作输出
+Claude Code (大脑) → 生成SVG代码 → MCP工具转换 → PPTX输出
 ```
 
-## 7个核心角色
+**SVG引擎**：基于PPT Master的SVG转PPTX方案
+- AI生成SVG（自然、灵活、可预览）
+- SVG后处理（图标嵌入、文本展平、圆角转路径）
+- 质量检查（禁止元素、字体安全、规范符合）
+- 转换为PPTX（可编辑）
 
-1. **Paper Analyzer** - 论文分析专家
-2. **Content Strategist** - 内容策略师
-3. **Visual Designer** - 视觉设计师
-4. **Slide Builder** - 幻灯片构建师
-5. **Quality Reviewer** - 质量审查员
-6. **Professor Reviewer** - 论文教授审查员
-7. **Material Collector** - 素材搜集员
+## 10步工作流（SVG版本）
 
-## 详细文档
+### Step 1-4: 需求分析（不变）
 
-### 角色规范
-- [references/](references/) - 7个角色规范文档
+### Step 5: 子Agent生成SVG代码
+关键步骤 - 并行执行多个子Agent：
+- Agent 1: 封面SVG
+- Agent 2: 内容页SVG
+- Agent 3: 数据图表SVG
+- Agent 4: 技术示意图SVG
+- Agent 5: 学术内容SVG
 
-### 工作流
-- [workflows/](workflows/) - 工作流详细文档
+### Step 6: SVG后处理 + 质量检查
+- finalize_svg: 嵌入图标、展平文本
+- svg_quality_checker: 质量检查
 
-### 模板
-- [templates/](templates/) - 设计规范模板
+### Step 7: SVG转PPTX
+- svg_to_pptx: 批量转换
+
+### Step 8-10: 预览、确认、打包
+
+## MCP工具
+
+| 工具名 | 用途 |
+|--------|------|
+| generate_svg_slide | 生成幻灯片SVG |
+| generate_svg_chart | 生成图表SVG |
+| svg_to_pptx | SVG转PPTX |
+| check_svg_quality | 质量检查 |
+| parse_papers | 解析论文 |
+| generate_preview_from_pptx | 预览PPTX |
+
+## SVG规范
+
+- 画布：1280x720像素
+- 坐标：像素坐标系统
+- 字体：Arial/Cambria Math
+- 颜色：使用spec_lock配色
