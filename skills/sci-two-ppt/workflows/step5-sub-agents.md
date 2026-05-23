@@ -1,149 +1,156 @@
-# Step 5: 子Agent并行执行工作流
+# Step 5: 子Agent生成SVG代码
 
 ## 概述
 
-Step 5 负责并行执行多个子Agent，完成论文要点提取、创新点提炼、UI设计、章节结构、讲解备注等任务。
+Step 5 是PPT制作的核心步骤，负责并行执行多个子Agent生成SVG代码。
 
 ## 角色
 
-多个子Agent并行执行：
-- Paper Analyzer (论文分析专家)
-- Content Strategist (内容策略师)
-- Visual Designer (视觉设计师)
-- Professor Reviewer (论文教授审查员)
-- Material Collector (素材搜集员)
+- **SVG Generator** (SVG生成器) - 生成SVG代码
+- **Visual Designer** (视觉设计师) - 设计配色和布局
+- **Material Collector** (素材搜集员) - 搜集图表素材
 
 ## 输入
 
-- `workspace/papers/analysis.json` - 论文分析结果
 - `workspace/goal.md` - PPT目标文档
-- `workspace/requirements.md` - 用户需求
+- `workspace/papers/analysis.json` - 论文分析结果
+- `workspace/papers/spec_lock.md` - 视觉规范
 
 ## 输出
 
-- `workspace/agent_results/01_paper_keypoints.md` - 论文要点
-- `workspace/agent_results/02_innovation_points.md` - 创新点
-- `workspace/agent_results/03_simulation_code.md` - 仿真分析
-- `workspace/agent_results/04_visual_resources.md` - 配图需求
-- `workspace/agent_results/05_ui_design.md` - UI设计
-- `workspace/agent_results/06_chapter_structure.md` - 章节结构
-- `workspace/agent_results/07_speaker_notes.md` - 讲解备注
+- `workspace/preview/*.svg` - SVG文件
 
-## 工作流程
+## SVG代码规范
 
-### 5.1 并行spawn子Agent
+### 画布尺寸
+- **PPT 16:9**: 1280×720 像素
+- **viewBox**: `0 0 1280 720`
 
-```python
-# 使用Agent工具并行spawn多个子Agent
-
-# Agent 1: 论文要点提取
-Agent(
-    description="提取论文核心内容和关键发现",
-    prompt="阅读论文解析结果，提取核心内容、关键发现、创新点",
-    run_in_background=True
-)
-
-# Agent 2: 核心创新点提炼
-Agent(
-    description="提炼研究创新点",
-    prompt="分析论文的创新性贡献，提炼核心创新点",
-    run_in_background=True
-)
-
-# Agent 3: UI风格设计
-Agent(
-    description="设计PPT视觉风格",
-    prompt="根据学术规范设计PPT的配色、字体、排版风格",
-    run_in_background=True
-)
-
-# Agent 4: 章节结构安排
-Agent(
-    description="规划PPT章节结构",
-    prompt="设计PPT的章节结构和时间分配",
-    run_in_background=True
-)
-
-# Agent 5: 讲解备注
-Agent(
-    description="编写每页讲解备注",
-    prompt="为PPT每一页编写详细的讲解备注",
-    run_in_background=True
-)
-
-# Agent 6: 论文教授审查
-Agent(
-    description="专业学术审查",
-    prompt="从教授角度审查研究内容的完整性和严谨性",
-    run_in_background=True
-)
-
-# Agent 7: 素材搜集
-Agent(
-    description="搜集PPT制作素材",
-    prompt="从学术期刊和网站搜集相关示意图和图表",
-    run_in_background=True
-)
+### 颜色方案
+使用 `spec_lock.md` 中定义的颜色：
+```yaml
+colors:
+  primary: "#0D2137"
+  secondary: "#1B6CA8"
+  accent: "#FF6B35"
+  background: "#FFFFFF"
+  text: "#2D2D2D"
 ```
 
-### 5.2 等待所有Agent完成
-- 所有Agent在后台并行运行
-- 完成后会自动通知
-- 读取所有产出文件
+### 字体规范
+- **标题**: Arial Bold 36pt
+- **正文**: Arial 18pt
+- **公式**: Cambria Math 20pt
+- **图注**: Arial 14pt
 
-### 5.3 验证产出
-- 检查所有文件是否生成
-- 验证内容质量
-- 记录完成状态
+### 坐标系统
+- 使用像素坐标
+- 原点在左上角
+- X轴向右，Y轴向下
 
-## 子Agent任务说明
+## 子Agent任务
 
-### Agent 1: 论文要点提取
-- 读取 analysis.json
-- 提取核心内容
-- 识别关键发现
-- 产出：01_paper_keypoints.md
+### Agent 1: 封面SVG生成
+```
+输入: 论文标题、作者、单位、日期
+输出: workspace/preview/slide_0.svg
+SVG模板: 渐变背景 + 居中标题 + 副标题
+```
 
-### Agent 2: 核心创新点提炼
-- 分析创新性贡献
-- 提炼核心创新点
-- 与现有研究对比
-- 产出：02_innovation_points.md
+### Agent 2: 内容页SVG生成
+```
+输入: 各章节标题和内容
+输出: workspace/preview/slide_1.svg ~ slide_N.svg
+SVG模板: 标题栏 + 左文右图布局
+```
 
-### Agent 3: UI风格设计
-- 设计配色方案
-- 规划页面布局
-- 选择图表风格
-- 产出：05_ui_design.md
+### Agent 3: 数据图表SVG生成
+```
+输入: 实验数据、误差分析结果
+输出: workspace/preview/chart_*.svg
+SVG模板: 柱状图、折线图、饼图
+使用: SvgGenerator.generate_bar_chart_svg()
+```
 
-### Agent 4: 章节结构安排
-- 规划章节结构
-- 分配时间节奏
-- 设计内容逻辑
-- 产出：06_chapter_structure.md
+### Agent 4: 技术示意图SVG生成
+```
+输入: 系统架构、光路设计
+输出: workspace/preview/diagram_*.svg
+SVG模板: 流程图、架构图、示意图
+```
 
-### Agent 5: 讲解备注
-- 编写开场白
-- 设计过渡语
-- 准备重点强调
-- 产出：07_speaker_notes.md
+### Agent 5: 学术内容SVG生成
+```
+输入: 公式、变量说明
+输出: workspace/preview/formula_*.svg
+SVG模板: 公式框 + 变量说明表
+```
 
-### Agent 6: 论文教授审查
-- 学术严谨性审查
-- 成果完整性评估
-- 图表需求建议
-- 产出：06_professor_review.md
+## SVG代码示例
 
-### Agent 7: 素材搜集
-- 搜索学术示意图
-- 生成数据图表
-- 创建流程图
-- 产出：07_material_collection.md
+### 封面页
+```svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720">
+  <defs>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0D2137"/>
+      <stop offset="100%" stop-color="#1B6CA8"/>
+    </linearGradient>
+  </defs>
+  <rect width="1280" height="720" fill="url(#bgGrad)"/>
+  <text x="640" y="300" text-anchor="middle"
+        font-family="Arial" font-size="48" font-weight="bold" fill="#FFFFFF">
+    论文标题
+  </text>
+  <text x="640" y="400" text-anchor="middle"
+        font-family="Arial" font-size="28" fill="#6699CC">
+    作者 | 单位
+  </text>
+</svg>
+```
 
-## 后续处理
+### 内容页
+```svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720">
+  <rect width="1280" height="720" fill="#FFFFFF"/>
+  <rect x="0" y="0" width="1280" height="80" fill="#0D2137"/>
+  <text x="80" y="52" font-family="Arial" font-size="36" font-weight="bold" fill="#FFFFFF">
+    章节标题
+  </text>
+  <text x="80" y="200" font-family="Arial" font-size="18" fill="#2D2D2D">
+    内容文本...
+  </text>
+</svg>
+```
 
-所有Agent完成后：
-1. 读取所有产出
-2. 向用户展示结果摘要
-3. 用户确认或要求修改
-4. 进入Step 6
+### 柱状图
+```svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720">
+  <rect width="1280" height="720" fill="#FFFFFF"/>
+  <text x="640" y="50" text-anchor="middle" font-family="Arial" font-size="28" font-weight="bold" fill="#2D2D2D">
+    图表标题
+  </text>
+  <line x1="150" y1="600" x2="1150" y2="600" stroke="#E0E0E0" stroke-width="2"/>
+  <line x1="150" y1="200" x2="150" y2="600" stroke="#E0E0E0" stroke-width="2"/>
+  <rect x="200" y="200" width="80" height="400" fill="#1B6CA8" rx="4"/>
+  <text x="240" y="190" text-anchor="middle" font-family="Arial" font-size="14" fill="#2D2D2D">8.0</text>
+  <text x="240" y="625" text-anchor="middle" font-family="Arial" font-size="12" fill="#2D2D2D">消光系数</text>
+</svg>
+```
+
+## 质量检查
+
+生成SVG后，调用 `check_svg_quality` 检查：
+- ✅ viewBox格式正确
+- ✅ 无禁止元素
+- ✅ 字体安全
+- ✅ 颜色符合规范
+- ✅ 坐标在画布范围内
+
+## 后续步骤
+
+SVG生成完成后：
+1. 调用 `check_svg_quality` 检查质量
+2. 调用 `svg_to_pptx` 转换为PPTX
+3. 生成预览，用户确认
+4. 如需修改，返回本步骤重新生成
