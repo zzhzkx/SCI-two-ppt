@@ -505,6 +505,134 @@ def generate_preview_from_pptx(pptx_path: str, slide_index: int, workspace_path:
 
 
 @mcp.tool()
+def generate_svg_slide(
+    title: str,
+    content: str,
+    layout: str = "content",
+    slide_index: int = 0,
+    workspace_path: str = ""
+) -> str:
+    """生成单页幻灯片的SVG代码。
+
+    Input: title - 标题, content - 内容, layout - 布局类型(title/content/chart/conclusion), slide_index - 页码
+    Output: JSON {
+        "svg_content": str,
+        "svg_path": str
+    }
+    """
+    from src.svg_engine.svg_generator import SvgGenerator
+
+    ws = Workspace(workspace_path or config.default_workspace)
+    ws.ensure_exists()
+
+    try:
+        generator = SvgGenerator()
+        svg_content = generator.generate_slide_svg(title, content, layout)
+        svg_path = generator.save_svg(svg_content, f"slide_{slide_index}.svg")
+
+        return json.dumps({
+            "svg_content": svg_content,
+            "svg_path": svg_path
+        }, ensure_ascii=False, indent=2)
+    except Exception as e:
+        return json.dumps({"error": str(e)}, ensure_ascii=False, indent=2)
+
+
+@mcp.tool()
+def generate_svg_chart(
+    chart_type: str,
+    title: str,
+    values: str,
+    labels: str = "",
+    slide_index: int = 0,
+    workspace_path: str = ""
+) -> str:
+    """生成图表SVG代码。
+
+    Input: chart_type - 图表类型(bar/pie/line), title - 标题, values - 数据值(JSON数组), labels - 标签(JSON数组)
+    Output: JSON {
+        "svg_content": str,
+        "svg_path": str
+    }
+    """
+    from src.svg_engine.svg_generator import SvgGenerator
+
+    ws = Workspace(workspace_path or config.default_workspace)
+    ws.ensure_exists()
+
+    try:
+        generator = SvgGenerator()
+        values_list = json.loads(values)
+        labels_list = json.loads(labels) if labels else None
+
+        if chart_type == "bar":
+            svg_content = generator.generate_bar_chart_svg(title, values_list, labels_list)
+        elif chart_type == "pie":
+            svg_content = generator.generate_pie_chart_svg(title, values_list, labels_list)
+        else:
+            return json.dumps({"error": f"不支持的图表类型: {chart_type}"}, ensure_ascii=False, indent=2)
+
+        svg_path = generator.save_svg(svg_content, f"chart_{slide_index}.svg")
+
+        return json.dumps({
+            "svg_content": svg_content,
+            "svg_path": svg_path
+        }, ensure_ascii=False, indent=2)
+    except Exception as e:
+        return json.dumps({"error": str(e)}, ensure_ascii=False, indent=2)
+
+
+@mcp.tool()
+def svg_to_pptx(svg_path: str, output_path: str, workspace_path: str = "") -> str:
+    """将SVG文件转换为PPTX文件。
+
+    Input: svg_path - SVG文件路径, output_path - 输出PPTX路径
+    Output: JSON {
+        "success": bool,
+        "pptx_path": str,
+        "errors": list
+    }
+    """
+    from src.svg_engine.svg_converter import SvgToPptxConverter
+
+    ws = Workspace(workspace_path or config.default_workspace)
+    ws.ensure_exists()
+
+    try:
+        converter = SvgToPptxConverter(str(ws.path / "output"))
+        result = converter.convert_svg_file_to_pptx(svg_path, output_path)
+
+        return json.dumps(result, ensure_ascii=False, indent=2)
+    except Exception as e:
+        return json.dumps({"error": str(e)}, ensure_ascii=False, indent=2)
+
+
+@mcp.tool()
+def check_svg_quality(svg_path: str, workspace_path: str = "") -> str:
+    """检查SVG文件质量。
+
+    Input: svg_path - SVG文件路径
+    Output: JSON {
+        "passed": bool,
+        "errors": list,
+        "warnings": list
+    }
+    """
+    from src.svg_engine.svg_converter import SvgQualityChecker
+
+    try:
+        with open(svg_path, 'r', encoding='utf-8') as f:
+            svg_content = f.read()
+
+        checker = SvgQualityChecker()
+        result = checker.check_svg(svg_content)
+
+        return json.dumps(result, ensure_ascii=False, indent=2)
+    except Exception as e:
+        return json.dumps({"error": str(e)}, ensure_ascii=False, indent=2)
+
+
+@mcp.tool()
 def detect_modifications(original: str, modified: str, workspace_path: str = "") -> str:
     """检测PPTX文件之间的变化。
 
