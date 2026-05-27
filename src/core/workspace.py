@@ -18,8 +18,11 @@ class Workspace:
         """Create workspace and all subdirectories if they don't exist."""
         dirs = [
             self.path,
+            self.path / "papers",
+            self.path / "output",
             self.path / "agent_results",
             self.path / "preview",
+            self.path / "materials",
             self.path / "assets",
             self.path / "assets" / "figures",
             self.path / "assets" / "images",

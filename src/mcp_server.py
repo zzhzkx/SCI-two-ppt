@@ -78,40 +78,109 @@ def extract_figures(pdf_path: str, output_dir: str = "", workspace_path: str = "
 def build_goal(paper_analysis: str, requirements: str, workspace_path: str = "") -> str:
     """构建结构化的PPT目标文档。
 
-    Input: paper_analysis - parse_papers输出的JSON, requirements - 用户需求文本
+    Input: paper_analysis - parse_papers输出的JSON或analysis.json路径, requirements - 用户需求文本或requirements.md路径
     Output: JSON {
         "goal_content": str,
+        "goal_path": str,
         "sections": [str],
         "slide_count_estimate": int
     }
+
+    读取论文分析和用户需求，按标准模板生成 goal.md 并保存到 workspace。
     """
     ws = Workspace(workspace_path or config.default_workspace)
     ws.ensure_exists()
 
-    # TODO: Implement goal.md generation in Milestone 3
-    goal_content = f"""# PPT Goal Document
+    try:
+        # 加载分析数据
+        if Path(paper_analysis).exists():
+            with open(paper_analysis, 'r', encoding='utf-8') as f:
+                analysis = json.load(f)
+            analysis_text = json.dumps(analysis, ensure_ascii=False, indent=2)
+        else:
+            analysis_text = paper_analysis
+            analysis = {}
 
-## Paper Analysis Summary
-{paper_analysis[:500]}
+        # 加载需求
+        if Path(requirements).exists():
+            with open(requirements, 'r', encoding='utf-8') as f:
+                requirements_text = f.read()
+        else:
+            requirements_text = requirements
 
-## Requirements
-{requirements}
+        title = analysis.get("title", "未指定标题")
+        innovations = analysis.get("innovations", [])
+        key_findings = analysis.get("key_findings", [])
+        research_field = analysis.get("research_field", "未指定领域")
+        conclusions = analysis.get("conclusions", "")
 
-## Sections
-1. Title & Introduction
-2. Background & Motivation
-3. Methods
-4. Results & Discussion
-5. Conclusion & Future Work
+        # 从需求中提取配置
+        duration = "10分钟"
+        audience = "学术听众"
+        purpose = "学术会议汇报"
+        for line in requirements_text.split('\n'):
+            if '时长' in line or 'duration' in line.lower():
+                duration = line.split('：')[-1].split(':')[-1].strip() or duration
+            if '听众' in line or 'audience' in line.lower():
+                audience = line.split('：')[-1].split(':')[-1].strip() or audience
+            if '用途' in line or 'purpose' in line.lower():
+                purpose = line.split('：')[-1].split(':')[-1].strip() or purpose
 
-## Notes
-[Mock] This goal document will be properly generated in Milestone 3.
+        innovations_text = '\n'.join(f"- {inn}" for inn in innovations) if innovations else "- 待分析"
+        findings_text = '\n'.join(f"- {f}" for f in key_findings) if key_findings else "- 待分析"
+
+        goal_content = f"""# PPT目标文档
+
+## 1. PPT概述
+- 标题：{title}
+- 用途：{purpose}
+- 时长：{duration}
+- 听众：{audience}
+- 研究领域：{research_field}
+
+## 2. 内容结构
+1. 封面（30秒）
+2. 研究背景（1分钟）
+3. 研究目的与创新点（1分钟）
+4. 研究方法（1.5分钟）
+5. 实验结果（2分钟）
+6. 结论与展望（1分钟）
+7. 致谢（30秒）
+
+## 3. 核心要点
+### 创新点
+{innovations_text}
+
+### 关键发现
+{findings_text}
+
+## 4. 视觉方向（高层建议，详细规范由 design_spec.md 定义）
+- 配色倾向：根据研究领域自动选择
+- 风格倾向：学术专业风格
+
+## 5. 讲解策略
+- 开场白：介绍研究背景和动机
+- 重点强调：创新点和关键数据
+- 过渡语：自然衔接各章节
+
+## 6. 信息补全
+- 结论：{conclusions}
+- 待补充：请根据审查结果补充
+
+---
+
+> 此文档由 build_goal 工具自动生成，请根据实际情况修改。
 """
-    return json.dumps({
-        "goal_content": goal_content,
-        "sections": ["Title", "Background", "Methods", "Results", "Conclusion"],
-        "slide_count_estimate": 12,
-    }, ensure_ascii=False, indent=2)
+        goal_path = ws.save_artifact("goal.md", goal_content)
+
+        return json.dumps({
+            "goal_content": goal_content,
+            "goal_path": str(goal_path),
+            "sections": ["概述", "内容结构", "核心要点", "视觉方向", "讲解策略", "信息补全"],
+            "slide_count_estimate": 7,
+        }, ensure_ascii=False, indent=2)
+    except Exception as e:
+        return json.dumps({"error": str(e)}, ensure_ascii=False, indent=2)
 
 
 @mcp.tool()
@@ -123,25 +192,281 @@ def run_subagent(
 ) -> str:
     """执行子Agent任务。
 
-    Input: agent_type - Agent类型(content_extract/visual_resources/ui_design/speaker_notes),
-           goal - goal.md内容, context - 上下文JSON
+    Input: agent_type - Agent类型（见下）, goal - goal.md内容, context - 上下文JSON
+           支持的 agent_type:
+             - paper_keypoints: 论文要点提取 (Step5 Agent1)
+             - innovation_points: 核心创新点提炼 (Step5 Agent2)
+             - simulation_code: 仿真代码分析 (Step5 Agent3)
+             - visual_resources: 学术配图搜集 (Step5 Agent4)
+             - ui_design: UI风格设计 (Step5 Agent5)
+             - chapter_structure: 章节结构安排 (Step5 Agent6)
+             - speaker_notes: 讲解备注 (Step5 Agent7)
     Output: JSON {
         "agent_type": str,
         "result_md": str,
+        "output_path": str,
         "assets": [str]
     }
     """
-    valid_types = ["content_extract", "visual_resources", "ui_design", "speaker_notes"]
+    valid_types = [
+        "paper_keypoints", "innovation_points", "simulation_code",
+        "visual_resources", "ui_design", "chapter_structure", "speaker_notes",
+    ]
     if agent_type not in valid_types:
         return json.dumps({"error": f"Invalid agent_type: {agent_type}. Must be one of {valid_types}"})
 
     ws = Workspace(workspace_path or config.default_workspace)
-    ws.ensure_exists()
+    ws_path = ws.ensure_exists()
 
-    # TODO: Implement actual agent logic in Milestone 4
+    # 读取分析数据
+    analysis_path = ws_path / "papers" / "analysis.json"
+    analysis = {}
+    if analysis_path.exists():
+        with open(analysis_path, 'r', encoding='utf-8') as f:
+            analysis = json.load(f)
+
+    # 读取已有产出（用于依赖分析）
+    agent_results_dir = ws_path / "agent_results"
+    agent_results_dir.mkdir(parents=True, exist_ok=True)
+
+    def _read_agent_result(filename):
+        p = agent_results_dir / filename
+        if p.exists():
+            return p.read_text(encoding='utf-8')
+        return ""
+
+    output_filename = ""
+    result_md = ""
+
+    if agent_type == "paper_keypoints":
+        innovations = analysis.get("innovations", [])
+        key_findings = analysis.get("key_findings", [])
+        methods = analysis.get("methods", "")
+        results_text = analysis.get("results", "")
+        result_md = f"""# 论文要点提取
+
+## 核心发现
+{chr(10).join(f'- {f}' for f in key_findings) if key_findings else '- 待分析'}
+
+## 创新点
+{chr(10).join(f'- {i}' for i in innovations) if innovations else '- 待分析'}
+
+## 研究方法
+{methods[:800] if methods else '待分析'}
+
+## 实验结果
+{results_text[:800] if results_text else '待分析'}
+"""
+        output_filename = "01_paper_keypoints.md"
+
+    elif agent_type == "innovation_points":
+        innovations = analysis.get("innovations", [])
+        result_md = f"""# 核心创新点提炼
+
+## 创新点分析
+{chr(10).join(f'### 创新点 {i+1}\n{inn}' for i, inn in enumerate(innovations)) if innovations else '### 待分析\n基于论文内容提炼创新点'}
+
+## 与现有研究对比
+- 对比分析待补充
+
+## 技术优势
+- 技术优势待补充
+"""
+        output_filename = "02_innovation_points.md"
+
+    elif agent_type == "simulation_code":
+        methods = analysis.get("methods", "")
+        results_text = analysis.get("results", "")
+        result_md = f"""# 仿真代码分析
+
+## 研究方法概述
+{methods[:1000] if methods else '待分析'}
+
+## 关键参数
+- 参数分析待补充
+
+## 仿真结果
+{results_text[:1000] if results_text else '待分析'}
+"""
+        output_filename = "03_simulation_code.md"
+
+    elif agent_type == "visual_resources":
+        research_field = analysis.get("research_field", "未知领域")
+        core_keywords = analysis.get("core_keywords", [])
+        result_md = f"""# 学术配图搜集
+
+## 研究领域
+{research_field}
+
+## 核心关键词
+{chr(10).join(f'- {k}' for k in core_keywords) if core_keywords else '- 待补充'}
+
+## 搜集计划
+1. 从论文中提取已有图表
+2. 搜索相关领域的示意图
+3. 生成数据可视化图表
+
+## 素材清单
+- 素材待搜集
+"""
+        output_filename = "04_visual_resources.md"
+
+    elif agent_type == "ui_design":
+        goal_path = ws_path / "goal.md"
+        goal_content = goal_path.read_text(encoding='utf-8') if goal_path.exists() else ""
+        design_spec_path = ws_path / "design_spec.md"
+        design_spec = design_spec_path.read_text(encoding='utf-8') if design_spec_path.exists() else ""
+
+        domain = analysis.get("research_field", "general").lower()
+        primary_color, secondary_color, accent_color = "#1A5276", "#2E86C1", "#E74C3C"
+        if "optics" in domain or "光学" in domain:
+            primary_color, secondary_color, accent_color = "#003366", "#6699CC", "#FF6600"
+        elif "bio" in domain or "生物" in domain:
+            primary_color, secondary_color, accent_color = "#196F3D", "#58D68D", "#E74C3C"
+        elif "computer" in domain or "计算机" in domain:
+            primary_color, secondary_color, accent_color = "#2C3E50", "#9B59B6", "#F39C12"
+
+        result_md = f"""# UI风格设计
+
+## 配色方案
+- 主色：{primary_color}（标题、边框）
+- 辅色：{secondary_color}（副标题、背景）
+- 强调色：{accent_color}（重点标注）
+- 背景色：#FFFFFF
+
+## 字体规范
+- 标题：Arial Bold 36pt
+- 副标题：Arial Semibold 24pt
+- 正文：Arial 18pt
+- 公式：Cambria Math 20pt
+- 图注：Arial 14pt
+
+## 页面布局
+- 封面页：居中布局，渐变背景（主色→辅色）
+- 内容页：上标题栏 + 左文右图
+- 图表页：标题 + 居中图表 + 图注
+- 总结页：居中布局，渐变背景
+
+## 设计决策来源
+{design_spec[:500] if design_spec else '（待生成 design_spec.md）'}
+"""
+        output_filename = "05_ui_design.md"
+
+        # 同时生成 spec_lock.md
+        spec_lock = f"""# 视觉设计执行锁
+colors:
+  primary: "{primary_color}"
+  secondary: "{secondary_color}"
+  accent: "{accent_color}"
+  background: "#FFFFFF"
+  text_primary: "#333333"
+  text_secondary: "#666666"
+  text_light: "#FFFFFF"
+fonts:
+  title:
+    family: "Arial"
+    size: 36
+    weight: "bold"
+    color: "{primary_color}"
+  subtitle:
+    family: "Arial"
+    size: 24
+    weight: "semibold"
+    color: "{secondary_color}"
+  body:
+    family: "Arial"
+    size: 18
+    weight: "normal"
+    color: "#333333"
+  caption:
+    family: "Arial"
+    size: 14
+    weight: "normal"
+    color: "#666666"
+layouts:
+  title_slide:
+    background_type: "gradient"
+    background_colors: ["{primary_color}", "{secondary_color}"]
+  content_slide:
+    title_position: "top"
+    content_position: "left"
+    figure_position: "right"
+  chart_slide:
+    title_position: "top"
+    chart_position: "center"
+  conclusion_slide:
+    background_type: "gradient"
+    background_colors: ["{primary_color}", "{secondary_color}"]
+"""
+        spec_lock_path = ws_path / "papers" / "spec_lock.md"
+        spec_lock_path.parent.mkdir(parents=True, exist_ok=True)
+        spec_lock_path.write_text(spec_lock, encoding='utf-8')
+
+    elif agent_type == "chapter_structure":
+        result_md = """# 章节结构安排
+
+## PPT结构
+1. **封面**（30秒）- 标题、作者、单位
+2. **研究背景**（1分钟）- 问题引出、研究意义
+3. **研究目的与创新点**（1分钟）- 核心创新点展示
+4. **研究方法**（1.5分钟）- 方法原理、实验设计
+5. **实验结果**（2分钟）- 关键数据、图表展示
+6. **结论与展望**（1分钟）- 核心结论、未来工作
+7. **致谢**（30秒）- 感谢语
+
+## 时间分配依据
+基于创新点和关键发现的重要性分配时间。
+
+## 内容逻辑
+- 从背景到问题到方案到结果到结论
+- 创新点在第3页重点展示
+"""
+        output_filename = "06_chapter_structure.md"
+
+    elif agent_type == "speaker_notes":
+        result_md = """# 讲解备注
+
+## 开场白
+各位老师、同学好，今天汇报的题目是关于本研究的工作。
+
+## 各页备注
+
+### 封面（Page 1）
+- 介绍论文标题和作者信息
+
+### 研究背景（Page 2）
+- 介绍研究问题的背景和意义
+
+### 研究目的与创新点（Page 3）
+- 明确研究目标，重点强调核心创新点
+
+### 研究方法（Page 4）
+- 介绍方法原理，说明实验设计
+
+### 实验结果（Page 5）
+- 展示关键数据，分析图表结果
+
+### 结论与展望（Page 6）
+- 总结核心结论，展望未来工作
+
+### 致谢（Page 7）
+- 感谢导师和合作者
+
+## 过渡语设计
+- 章节之间："接下来介绍..."
+- 重点之前："特别需要注意的是..."
+- 数据展示："从数据可以看出..."
+"""
+        output_filename = "07_speaker_notes.md"
+
+    # 保存到文件
+    output_path = agent_results_dir / output_filename
+    output_path.write_text(result_md, encoding='utf-8')
+
     return json.dumps({
         "agent_type": agent_type,
-        "result_md": f"[Mock] {agent_type} agent result - will be implemented in Milestone 4",
+        "result_md": result_md,
+        "output_path": str(output_path),
         "assets": [],
     }, ensure_ascii=False, indent=2)
 
@@ -255,36 +580,147 @@ def diff_pptx(original: str, modified: str, workspace_path: str = "") -> str:
 def generate_blueprint(goal: str, agent_results: str, workspace_path: str = "") -> str:
     """生成详细的PPT蓝图。
 
-    Input: goal - goal.md内容, agent_results - Agent结果JSON
+    Input: goal - goal.md内容或路径, agent_results - Agent结果JSON或目录路径
     Output: JSON {
         "blueprint_yaml": str,
+        "blueprint_path": str,
         "slide_count": int
     }
+
+    读取 goal.md 和 agent_results，根据章节结构和内容生成 YAML 蓝图。
     """
     ws = Workspace(workspace_path or config.default_workspace)
-    ws.ensure_exists()
+    ws_path = ws.ensure_exists()
 
-    # TODO: Implement blueprint generation in Milestone 5
-    blueprint = """# PPT Blueprint
-slides:
-  - index: 0
-    type: title
-    title: "[Mock] Title Slide"
-    subtitle: "[Mock] Subtitle"
-    notes: "Welcome and introduction"
-    duration_seconds: 30
+    try:
+        # 读取 goal.md
+        if Path(goal).exists():
+            with open(goal, 'r', encoding='utf-8') as f:
+                goal_content = f.read()
+        else:
+            goal_content = goal
 
-  - index: 1
-    type: content
-    title: "[Mock] Content Slide"
-    content: "[Mock] Main content"
-    notes: "Explain key points"
-    duration_seconds: 120
-"""
-    return json.dumps({
-        "blueprint_yaml": blueprint,
-        "slide_count": 2,
-    }, ensure_ascii=False, indent=2)
+        # 读取 agent_results 目录
+        agent_dir = Path(agent_results) if Path(agent_results).is_dir() else ws_path / "agent_results"
+        agent_texts = {}
+        if agent_dir.exists():
+            for p in sorted(agent_dir.glob("*.md")):
+                agent_texts[p.stem] = p.read_text(encoding='utf-8')
+
+        # 从 goal.md 提取标题
+        title = "论文标题"
+        for line in goal_content.split('\n'):
+            if line.strip().startswith('- 标题：') or line.strip().startswith('- 标题:'):
+                title = line.split('：')[-1].split(':')[-1].strip()
+                break
+
+        # 从 chapter_structure 提取章节信息
+        chapter_text = agent_texts.get("06_chapter_structure", "")
+        speaker_text = agent_texts.get("07_speaker_notes", "")
+
+        # 构建蓝图
+        slides = []
+        slide_index = 0
+
+        # Slide 0: 封面
+        slides.append({
+            "index": slide_index,
+            "type": "title",
+            "title": title,
+            "subtitle": "作者信息 | 单位信息",
+            "notes": "介绍论文标题和作者信息",
+            "duration_seconds": 30,
+            "layout": "centered",
+        })
+        slide_index += 1
+
+        # 标准章节配置
+        standard_sections = [
+            ("研究背景", "content", "介绍研究问题的背景和意义", 60, "left_text_right_image"),
+            ("研究目的与创新点", "content", "明确研究目标，重点强调核心创新点", 60, "left_text_right_image"),
+            ("研究方法", "content", "介绍方法原理，说明实验设计", 90, "left_text_right_image"),
+            ("实验结果", "chart", "展示关键数据，分析图表结果", 120, "chart_center"),
+            ("结论与展望", "conclusion", "总结核心结论，展望未来工作", 60, "centered"),
+            ("致谢", "conclusion", "感谢导师和合作者", 30, "centered"),
+        ]
+
+        # 从 chapter_structure 解析实际章节（如果有）
+        actual_sections = []
+        for line in chapter_text.split('\n'):
+            line = line.strip()
+            if line.startswith(('1.', '2.', '3.', '4.', '5.', '6.', '7.', '8.', '9.')):
+                # 提取章节名和时间
+                parts = line.split('**')
+                if len(parts) >= 3:
+                    section_name = parts[1].strip()
+                    # 提取时间
+                    time_part = line.split('（')[-1].split('）')[0] if '（' in line else "60秒"
+                    try:
+                        if '分钟' in time_part:
+                            duration = int(float(time_part.replace('分钟', '').strip()) * 60)
+                        elif '秒' in time_part:
+                            duration = int(time_part.replace('秒', '').strip())
+                        else:
+                            duration = 60
+                    except ValueError:
+                        duration = 60
+
+                    slide_type = "title" if "封面" in section_name else \
+                                 "chart" if "结果" in section_name or "实验" in section_name else \
+                                 "conclusion" if "结论" in section_name or "致谢" in section_name else "content"
+
+                    actual_sections.append({
+                        "name": section_name,
+                        "type": slide_type,
+                        "duration": duration,
+                    })
+
+        # 如果解析到实际章节则用实际的，否则用标准的
+        sections_to_use = actual_sections if len(actual_sections) >= 3 else [
+            {"name": s[0], "type": s[1], "duration": s[4]} for s in standard_sections
+        ]
+
+        for section in sections_to_use:
+            slide_def = {
+                "index": slide_index,
+                "type": section["type"],
+                "title": section["name"],
+                "content": f"在此展示{section['name']}的相关内容",
+                "notes": f"讲解{section['name']}",
+                "duration_seconds": section.get("duration", 60),
+                "layout": "chart_center" if section["type"] == "chart" else "left_text_right_image",
+            }
+            slides.append(slide_def)
+            slide_index += 1
+
+        # 构建 YAML
+        yaml_lines = ["slides:"]
+        for s in slides:
+            yaml_lines.append(f"  - index: {s['index']}")
+            yaml_lines.append(f"    type: {s['type']}")
+            yaml_lines.append(f"    title: \"{s['title']}\"")
+            if "subtitle" in s:
+                yaml_lines.append(f"    subtitle: \"{s['subtitle']}\"")
+            if "content" in s:
+                yaml_lines.append(f"    content: \"{s['content']}\"")
+            yaml_lines.append(f"    notes: \"{s['notes']}\"")
+            yaml_lines.append(f"    duration_seconds: {s['duration_seconds']}")
+            yaml_lines.append(f"    layout: \"{s.get('layout', 'left_text_right_image')}\"")
+            yaml_lines.append("")
+
+        blueprint_yaml = "\n".join(yaml_lines)
+
+        # 保存到文件
+        blueprint_path = ws_path / "blueprint.yaml"
+        blueprint_path.write_text(blueprint_yaml, encoding='utf-8')
+
+        return json.dumps({
+            "blueprint_yaml": blueprint_yaml,
+            "blueprint_path": str(blueprint_path),
+            "slide_count": len(slides),
+        }, ensure_ascii=False, indent=2)
+    except Exception as e:
+        return json.dumps({"error": str(e)}, ensure_ascii=False, indent=2)
 
 
 @mcp.tool()
@@ -314,21 +750,34 @@ def build_slide(
 
 @mcp.tool()
 def render_preview(pptx_path: str, slide_index: int, workspace_path: str = "") -> str:
-    """渲染幻灯片为预览图片。
+    """渲染幻灯片为HTML预览。
 
     Input: pptx_path - PPTX文件路径, slide_index - 页码
     Output: JSON {
-        "preview_image": str
+        "html_path": str,
+        "pptx_path": str
     }
+
+    从PPTX文件生成HTML预览，保持与PowerPoint一致的视觉效果。
     """
+    from src.generators.preview.preview_generator import PreviewGenerator
+
     ws = Workspace(workspace_path or config.default_workspace)
     ws.ensure_exists()
 
-    # TODO: Implement preview rendering in Milestone 5
-    return json.dumps({
-        "preview_image": str(ws.path / "preview" / f"slide_{slide_index}.png"),
-        "status": "[Mock] Preview rendering will be implemented in Milestone 5",
-    }, ensure_ascii=False, indent=2)
+    try:
+        if not Path(pptx_path).exists():
+            return json.dumps({"error": f"PPTX文件不存在: {pptx_path}"}, ensure_ascii=False, indent=2)
+
+        preview_gen = PreviewGenerator(str(ws.path / "preview"))
+        html_path = preview_gen.generate_html_from_pptx(pptx_path, slide_index)
+
+        return json.dumps({
+            "html_path": html_path,
+            "pptx_path": pptx_path,
+        }, ensure_ascii=False, indent=2)
+    except Exception as e:
+        return json.dumps({"error": str(e)}, ensure_ascii=False, indent=2)
 
 
 @mcp.tool()
@@ -340,23 +789,155 @@ def generate_pptx(
 ) -> str:
     """最终打包生成PPTX文件。
 
-    Input: blueprint - 蓝图YAML, slide_dir - 确认的幻灯片目录, output_path - 输出路径
+    Input: blueprint - 蓝图YAML或路径, slide_dir - 单页PPTX目录, output_path - 输出路径
     Output: JSON {
         "pptx_path": str,
         "report_md": str,
         "slide_count": int
     }
-    """
-    ws = Workspace(workspace_path or config.default_workspace)
-    ws.ensure_exists()
 
-    # TODO: Implement final PPTX generation in Milestone 5
-    return json.dumps({
-        "pptx_path": output_path or str(ws.path / "output.pptx"),
-        "report_md": "[Mock] Production report will be generated in Milestone 5",
-        "slide_count": 0,
-        "status": "[Mock] PPTX generation will be implemented in Milestone 5",
-    }, ensure_ascii=False, indent=2)
+    有两种模式：
+    1. 如果 slide_dir 中有单页 PPTX 文件，合并它们
+    2. 否则根据 blueprint 生成新 PPTX（使用 SVG 引擎或 python-pptx）
+    """
+    from pptx import Presentation
+    from pptx.util import Inches, Pt, Emu
+    import yaml as yaml_lib
+
+    ws = Workspace(workspace_path or config.default_workspace)
+    ws_path = ws.ensure_exists()
+    output = output_path or str(ws_path / "output" / "output_final.pptx")
+    Path(output).parent.mkdir(parents=True, exist_ok=True)
+
+    try:
+        # 读取蓝图
+        if Path(blueprint).exists():
+            with open(blueprint, 'r', encoding='utf-8') as f:
+                blueprint_text = f.read()
+        else:
+            blueprint_text = blueprint
+
+        # 尝试解析蓝图
+        try:
+            bp = yaml_lib.safe_load(blueprint_text)
+            slides_def = bp.get("slides", []) if bp else []
+        except Exception:
+            slides_def = []
+
+        # 检查是否有单页 PPTX 文件可以合并
+        slide_dir_path = Path(slide_dir) if slide_dir else ws_path / "preview"
+        pptx_files = sorted(slide_dir_path.glob("slide_*.pptx")) if slide_dir_path.exists() else []
+
+        if pptx_files:
+            # 模式1：合并已有单页 PPTX
+            merged_prs = Presentation()
+            # 设置为16:9
+            merged_prs.slide_width = Inches(13.333)
+            merged_prs.slide_height = Inches(7.5)
+
+            for pptx_file in pptx_files:
+                try:
+                    src_prs = Presentation(str(pptx_file))
+                    for slide in src_prs.slides:
+                        # 复制幻灯片
+                        layout = merged_prs.slide_layouts[6]  # 空白布局
+                        new_slide = merged_prs.slides.add_slide(layout)
+
+                        # 复制所有形状
+                        for shape in slide.shapes:
+                            el = shape._element
+                            new_slide.shapes._spTree.append(el)
+                except Exception as e:
+                    continue
+
+            merged_prs.save(output)
+            slide_count = len(merged_prs.slides)
+
+        elif slides_def:
+            # 模式2：根据蓝图创建新 PPTX
+            prs = Presentation()
+            prs.slide_width = Inches(13.333)
+            prs.slide_height = Inches(7.5)
+
+            for slide_def in slides_def:
+                slide_type = slide_def.get("type", "content")
+                title = slide_def.get("title", "")
+                content = slide_def.get("content", "")
+                notes = slide_def.get("notes", "")
+                subtitle = slide_def.get("subtitle", "")
+
+                layout = prs.slide_layouts[6]  # 空白布局
+                slide = prs.slides.add_slide(layout)
+
+                # 添加标题
+                if title:
+                    from pptx.util import Inches as In
+                    txBox = slide.shapes.add_textbox(In(0.8), In(0.4), In(11.7), In(1.0))
+                    tf = txBox.text_frame
+                    tf.word_wrap = True
+                    p = tf.paragraphs[0]
+                    p.text = title
+                    p.font.size = Pt(36)
+                    p.font.bold = True
+
+                # 添加副标题（封面页）
+                if subtitle and slide_type == "title":
+                    txBox2 = slide.shapes.add_textbox(In(2.0), In(3.0), In(9.3), In(1.0))
+                    tf2 = txBox2.text_frame
+                    p2 = tf2.paragraphs[0]
+                    p2.text = subtitle
+                    p2.font.size = Pt(24)
+
+                # 添加内容
+                if content and slide_type != "title":
+                    txBox3 = slide.shapes.add_textbox(In(0.8), In(1.8), In(11.7), In(5.0))
+                    tf3 = txBox3.text_frame
+                    tf3.word_wrap = True
+                    p3 = tf3.paragraphs[0]
+                    p3.text = content
+                    p3.font.size = Pt(18)
+
+                # 添加备注
+                if notes:
+                    notes_slide = slide.notes_slide
+                    notes_slide.notes_text_frame.text = notes
+
+            prs.save(output)
+            slide_count = len(prs.slides)
+        else:
+            # 无蓝图无单页，创建空PPTX
+            prs = Presentation()
+            prs.slide_width = Inches(13.333)
+            prs.slide_height = Inches(7.5)
+            prs.save(output)
+            slide_count = 0
+
+        # 生成制作报告
+        report = f"""# PPT制作报告
+
+## 基本信息
+- 输出文件：{output}
+- 总页数：{slide_count}
+- 蓝图来源：{'蓝图文件' if Path(blueprint).exists() else '直接输入'}
+
+## 生成方式
+{'合并单页PPTX文件' if pptx_files else '根据蓝图生成'}
+
+## 文件清单
+- {output} - 最终PPT
+"""
+        report_path = ws_path / "production_report.md"
+        report_path.write_text(report, encoding='utf-8')
+
+        return json.dumps({
+            "pptx_path": output,
+            "report_md": report,
+            "slide_count": slide_count,
+            "report_path": str(report_path),
+        }, ensure_ascii=False, indent=2)
+
+    except Exception as e:
+        return json.dumps({"error": str(e)}, ensure_ascii=False, indent=2)
 
 
 @mcp.tool()
@@ -431,7 +1012,14 @@ def cleanup_workspace(workspace_path: str = "") -> str:
                     f.unlink()
 
     # 保留重要文件
-    important_files = ["output.pptx", "goal.md", "requirements.md", "production_report.md"]
+    important_files = [
+        "output/output_final.pptx",
+        "blueprint.yaml",
+        "goal.md",
+        "requirements.md",
+        "design_spec.md",
+        "production_report.md",
+    ]
     for file_name in important_files:
         file_path = ws.path / file_name
         if file_path.exists():

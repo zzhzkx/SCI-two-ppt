@@ -120,68 +120,78 @@ MCP Server (工具)
 
 **用户确认后**：流程完成
 
-## 7个核心角色
+## 7个核心角色（对应 run_subagent 的 agent_type）
 
-| 角色 | 职责 | 输入 | 输出 |
-|------|------|------|------|
-| Paper Analyzer | 论文分析 | 原始文本 | analysis.json |
-| Content Strategist | 内容策略 | analysis + requirements | goal.md |
-| Visual Designer | 视觉设计 | goal.md | spec_lock.md |
-| SVG Generator | SVG生成 | blueprint + spec_lock | .svg文件 |
-| Quality Reviewer | 质量审查 | 所有产出 | review_report |
-| Professor Reviewer | 学术审查 | analysis + goal | expert_review |
-| Material Collector | 素材搜集 | research_field | materials/ |
+| 角色 | agent_type | 职责 | 输入 | 输出文件 |
+|------|-----------|------|------|----------|
+| Paper Analyzer | `paper_keypoints` | 论文要点提取 | analysis.json | 01_paper_keypoints.md |
+| Content Strategist | `innovation_points` | 创新点提炼 | 01_paper_keypoints.md | 02_innovation_points.md |
+| Paper Analyzer | `simulation_code` | 仿真代码分析 | analysis.json | 03_simulation_code.md |
+| Material Collector | `visual_resources` | 学术配图搜集 | analysis.json + search_queries.json | 04_visual_resources.md |
+| Visual Designer | `ui_design` | UI风格设计 | goal.md | 05_ui_design.md |
+| Content Strategist | `chapter_structure` | 章节结构安排 | 01 + 02 | 06_chapter_structure.md |
+| Content Strategist | `speaker_notes` | 讲解备注 | 06_chapter_structure.md | 07_speaker_notes.md |
 
-## MCP工具清单
+**并行关系**：Agent 1~4 可并行；Agent 5 依赖 Agent1；Agent 6 依赖 Agent1+2；Agent 7 依赖 Agent6
 
-### 论文解析
+## MCP工具清单（25个工具）
+
+### 论文解析（2个）
 | 工具名 | 用途 |
 |--------|------|
-| `parse_papers` | 提取论文原始文本 |
-| `extract_figures` | 提取图表 |
+| `parse_papers` | 提取论文原始文本（PDF/Word） |
+| `extract_figures` | 提取PDF中的图表和图片 |
 
-### SVG引擎
+### 内容规划（2个）
+| 工具名 | 用途 |
+|--------|------|
+| `build_goal` | 构建结构化PPT目标文档 |
+| `run_subagent` | 执行7种类型的子Agent任务 |
+
+### SVG引擎（4个）
 | 工具名 | 用途 |
 |--------|------|
 | `generate_svg_slide` | 生成幻灯片SVG |
 | `generate_svg_chart` | 生成图表SVG |
 | `svg_to_pptx` | SVG转PPTX |
-| `check_svg_quality` | 质量检查 |
+| `check_svg_quality` | SVG质量检查 |
 
-### PPT生成
+### PPT生成（5个）
 | 工具名 | 用途 |
 |--------|------|
 | `build_slide` | 生成单页幻灯片 |
-| `generate_pptx` | 最终打包 |
+| `generate_blueprint` | 生成PPT蓝图YAML |
+| `generate_pptx` | 最终打包生成PPTX |
 | `read_pptx` | 读取PPTX状态 |
 | `diff_pptx` | 对比PPTX差异 |
 
-### 规范库
+### 规范库（3个）
 | 工具名 | 用途 |
 |--------|------|
-| `get_academic_style` | 学术规范 |
+| `get_academic_style` | 学术规范（配色/字体/排版） |
 | `get_slide_template` | 页面模板 |
 | `get_citation_format` | 引用格式 |
 
-### 预览系统
+### 预览系统（4个）
 | 工具名 | 用途 |
 |--------|------|
-| `generate_preview` | 生成预览 |
-| `generate_preview_from_pptx` | PPTX预览 |
-| `start_preview_server` | 启动WebSocket |
+| `generate_preview` | 从蓝图数据生成HTML预览 |
+| `generate_preview_from_pptx` | 从PPTX文件生成HTML预览 |
+| `render_preview` | 渲染幻灯片为预览图片 |
+| `start_preview_server` | 启动WebSocket预览服务器 |
 
-### 反馈系统
+### 反馈系统（3个）
 | 工具名 | 用途 |
 |--------|------|
-| `detect_modifications` | 检测修改 |
-| `learn_feedback` | 学习反馈 |
-| `get_feedback_patterns` | 获取反馈模式 |
+| `detect_modifications` | 检测PPTX文件修改 |
+| `learn_feedback` | 从用户修改学习反馈模式 |
+| `get_feedback_patterns` | 获取已积累的反馈模式 |
 
-### 工作空间
+### 工作空间（2个）
 | 工具名 | 用途 |
 |--------|------|
-| `cleanup_workspace` | 清理文件 |
-| `get_latest_feedback` | 获取反馈 |
+| `cleanup_workspace` | 整理清理工作空间 |
+| `get_latest_feedback` | 获取最新用户反馈 |
 
 ## 详细文档
 

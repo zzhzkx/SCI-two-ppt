@@ -24,42 +24,48 @@ AI-powered scientific paper to presentation PPT generator.
 - workspace 路径默认 `./workspace`
 - 配置优先级: settings.local.yaml > settings.yaml
 
-## MCP 工具清单
+## MCP 工具清单（25个工具）
 
 ### 论文解析
 1. `parse_papers` - 提取论文原始文本
 2. `extract_figures` - 提取图表
 
+### 内容规划
+3. `build_goal` - 构建PPT目标文档
+4. `run_subagent` - 执行7种类型的子Agent任务
+
 ### SVG引擎
-3. `generate_svg_slide` - 生成幻灯片SVG
-4. `generate_svg_chart` - 生成图表SVG
-5. `svg_to_pptx` - SVG转PPTX
-6. `check_svg_quality` - 质量检查
+5. `generate_svg_slide` - 生成幻灯片SVG
+6. `generate_svg_chart` - 生成图表SVG
+7. `svg_to_pptx` - SVG转PPTX
+8. `check_svg_quality` - 质量检查
 
 ### PPT生成
-7. `build_slide` - 生成单页幻灯片
-8. `generate_pptx` - 最终打包
-9. `read_pptx` - 读取PPTX状态
-10. `diff_pptx` - 对比PPTX差异
+9. `build_slide` - 生成单页幻灯片
+10. `generate_blueprint` - 生成PPT蓝图YAML
+11. `generate_pptx` - 最终打包
+12. `read_pptx` - 读取PPTX状态
+13. `diff_pptx` - 对比PPTX差异
 
 ### 规范库
-11. `get_academic_style` - 学术规范
-12. `get_slide_template` - 页面模板
-13. `get_citation_format` - 引用格式
+14. `get_academic_style` - 学术规范
+15. `get_slide_template` - 页面模板
+16. `get_citation_format` - 引用格式
 
 ### 预览系统
-14. `generate_preview` - 生成预览
-15. `generate_preview_from_pptx` - PPTX预览
-16. `start_preview_server` - 启动WebSocket
+17. `generate_preview` - 生成HTML预览
+18. `generate_preview_from_pptx` - 从PPTX生成HTML预览
+19. `render_preview` - 渲染幻灯片预览图片
+20. `start_preview_server` - 启动WebSocket
 
 ### 反馈系统
-17. `detect_modifications` - 检测修改
-18. `learn_feedback` - 学习反馈
-19. `get_feedback_patterns` - 获取反馈模式
+21. `detect_modifications` - 检测修改
+22. `learn_feedback` - 学习反馈
+23. `get_feedback_patterns` - 获取反馈模式
 
 ### 工作空间
-20. `cleanup_workspace` - 清理文件
-21. `get_latest_feedback` - 获取反馈
+- `cleanup_workspace` - 清理文件
+- `get_latest_feedback` - 获取反馈
 
 ## 测试
 - 运行测试: `python -m pytest tests/`

@@ -20,7 +20,7 @@
 - `workspace/goal.md` - PPT目标文档
 
 ### 输出
-- `workspace/agent_results/06_professor_review.md` - 教授审查报告
+- `workspace/agent_results/04_expert_review.md` - 教授审查报告（与 Step4 工作流一致）
 
 ## 审查维度
 

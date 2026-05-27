@@ -17,8 +17,10 @@ Step 4 负责使用两个专业角色从不同角度审查目标文档，确保�
 
 ## 输出
 
-- `workspace/agent_results/04_expert_review.md` - 领域专家审查报告
-- `workspace/agent_results/04_designer_review.md` - PPT制作师审查报告
+- `workspace/agent_results/04_expert_review.md` - 领域专家审查报告（Professor Reviewer）
+- `workspace/agent_results/04_designer_review.md` - PPT制作师审查报告（Quality Reviewer）
+
+文件命名规则：`Step编号_角色简写.md`
 
 ## 工作流程
 
@@ -89,4 +91,6 @@ prompt: |
 根据审查结果：
 1. 如果需要补充内容 → 返回Step 5重新执行相关Agent
 2. 如果需要调整设计 → 返回Step 3重新构建目标文档
-3. 如果审查通过 → 进入Step 5
+3. 如果审查通过 → 生成 `workspace/design_spec.md`（设计决策文档），然后进入Step 5
+
+**design_spec.md 的角色**：综合两位审查员的意见，确定最终配色、字体、布局等设计决策。Visual Designer 在 Step 5 读取 design_spec.md，生成机器可读的 `workspace/papers/spec_lock.md`。

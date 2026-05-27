@@ -23,7 +23,7 @@ Step 8 负责按照蓝图逐页制作PPT，支持两种制作方式：
 ### 8.1 读取设计规范
 ```python
 spec_lock = read_yaml("workspace/papers/spec_lock.md")
-blueprint = read_yaml("workspace/papers/blueprint.yaml")
+blueprint = read_yaml("workspace/blueprint.yaml")
 ```
 
 ### 8.2 逐页生成SVG

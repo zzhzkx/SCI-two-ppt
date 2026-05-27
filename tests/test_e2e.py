@@ -17,13 +17,21 @@ async def test_parse_papers():
     # 测试不存在的文件
     result = await parse_papers(["nonexistent.pdf"])
     assert len(result["papers"]) == 0
-    assert len(result["quality_report"]) > 0
+    assert len(result["errors"]) > 0
     print("[OK] Error handling works")
 
-    # 测试非PDF文件
-    result = await parse_papers(["test.txt"])
-    assert len(result["papers"]) == 0
-    print("[OK] File type validation works")
+    # 测试非PDF文件（用临时文件模拟）
+    import tempfile, os
+    with tempfile.NamedTemporaryFile(suffix=".txt", delete=False) as f:
+        f.write(b"test content")
+        txt_path = f.name
+    try:
+        result = await parse_papers([txt_path])
+        assert len(result["papers"]) == 0
+        assert any("不支持" in e for e in result["errors"])
+        print("[OK] File type validation works")
+    finally:
+        os.unlink(txt_path)
 
 
 async def test_extract_figures():

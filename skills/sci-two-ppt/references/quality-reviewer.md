@@ -19,7 +19,9 @@
 - `workspace/agent_results/` - 所有Agent产出
 
 ### 输出
-- `workspace/agent_results/08_quality_review.md` - 质量审查报告
+- `workspace/agent_results/04_designer_review.md` - 设计审查报告（Step 4 审查时使用）
+
+注意：此角色在 Step 4 参与设计审查。最终PPT的综合质量审查在 Step 8-9 完成后进行。
 
 ## 审查维度
 

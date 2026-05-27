@@ -14,8 +14,8 @@
 5. 生成预览文件
 
 ### 输入
-- `workspace/papers/blueprint.yaml` - PPT蓝图
-- `workspace/papers/spec_lock.md` - 视觉规范
+- `workspace/blueprint.yaml` - PPT蓝图
+- `workspace/papers/spec_lock.md` - 视觉规范（如已生成）
 - `workspace/materials/` - 素材资源
 
 ### 输出
@@ -38,7 +38,7 @@ layouts = spec_lock["layouts"]
 ### Step 2: 读取PPT蓝图
 ```python
 # 读取蓝图
-blueprint = read_yaml("workspace/papers/blueprint.yaml")
+blueprint = read_yaml("workspace/blueprint.yaml")
 
 # 获取每页定义
 slides = blueprint["slides"]

@@ -53,7 +53,7 @@ slides:
 ```
 
 ### 7.3 保存蓝图
-保存到 `workspace/papers/blueprint.yaml`
+保存到 `workspace/blueprint.yaml`
 
 ---
 
@@ -138,7 +138,7 @@ final_pptx = merge_pptx_files(confirmed_slides)
 - 动画效果（可选）
 
 ### 9.3 输出
-- `workspace/output/final.pptx` - 最终PPT文件
+- `workspace/output/output_final.pptx` - 最终PPT文件
 
 ---
 
@@ -148,9 +148,12 @@ final_pptx = merge_pptx_files(confirmed_slides)
 ```python
 # 保留重要文件
 keep = [
-    "workspace/output/final.pptx",
+    "workspace/output/output_final.pptx",
+    "workspace/blueprint.yaml",
+    "workspace/goal.md",
+    "workspace/requirements.md",
+    "workspace/agent_results/",
     "workspace/papers/",
-    "workspace/agent_results/"
 ]
 
 # 清理临时文件
@@ -193,16 +196,18 @@ clean = [
 ```
 workspace/
 ├── output/
-│   └── final.pptx              # 最终PPT
+│   └── output_final.pptx       # 最终PPT
+├── blueprint.yaml               # PPT蓝图
+├── goal.md                      # 目标文档
+├── requirements.md              # 需求文档
+├── design_spec.md               # 设计规范
 ├── papers/
-│   ├── analysis.json           # 论文分析
-│   ├── goal.md                 # 目标文档
-│   ├── requirements.md         # 需求文档
-│   ├── blueprint.yaml          # PPT蓝图
-│   └── spec_lock.md            # 视觉规范
-├── agent_results/              # Agent产出
-├── production_report.md        # 制作报告
-└── README.md                   # 工作区说明
+│   ├── analysis.json            # 论文分析
+│   └── search_queries.json      # 检索式
+├── agent_results/               # Agent产出
+├── materials/                   # 素材资源
+├── production_report.md         # 制作报告
+└── README.md                    # 工作区说明
 ```
 
 ---

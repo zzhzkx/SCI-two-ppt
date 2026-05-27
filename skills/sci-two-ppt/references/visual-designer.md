@@ -14,12 +14,13 @@
 5. 创建视觉规范文档
 
 ### 输入
-- `workspace/goal.md` - PPT目标文档
+- `workspace/goal.md` - PPT目标文档（内容策略）
+- `workspace/design_spec.md` - 设计决策文档（Step4 审查后生成，含配色/字体/布局决策）
 - 研究领域信息
 
 ### 输出
-- `workspace/agent_results/05_ui_design.md` - UI设计规范
-- `workspace/papers/spec_lock.md` - 执行锁文件
+- `workspace/agent_results/05_ui_design.md` - UI设计实现细节（子Agent编号对齐）
+- `workspace/papers/spec_lock.md` - 机器可读执行锁（从 design_spec.md 转换）
 
 ## 设计原则
 

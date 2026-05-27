@@ -113,38 +113,6 @@ Agent 6 → chapter_structure.md
 Agent 7 → speaker_notes.md
 ```
 
-## SVG代码生成
-
-在Agent执行的同时或之后，生成SVG代码：
-
-### 封面SVG
-```python
-svg_content = generate_svg_slide(
-    title="论文标题",
-    subtitle="作者 | 单位",
-    layout="title"
-)
-```
-
-### 内容页SVG
-```python
-svg_content = generate_svg_slide(
-    title="章节标题",
-    content="内容文本",
-    layout="content"
-)
-```
-
-### 图表SVG
-```python
-svg_content = generate_svg_chart(
-    chart_type="bar",
-    title="图表标题",
-    values=[8.0, 6.8, 1.7],
-    labels=["误差源1", "误差源2", "误差源3"]
-)
-```
-
 ## 与用户交互
 
 ### 审查流程
@@ -157,7 +125,6 @@ svg_content = generate_svg_chart(
 - 核心创新点是否准确
 - 章节结构是否合理
 - 时间分配是否合适
-- SVG代码是否需要调整
 
 ## 后续步骤
 
@@ -166,3 +133,5 @@ svg_content = generate_svg_chart(
 2. 向用户展示结果摘要
 3. 用户确认或修改
 4. 进入Step 6（审查确认）
+
+**注意**：SVG代码生成属于 Step 8（逐页制作PPT），不在本步骤执行。

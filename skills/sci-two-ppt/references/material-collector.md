@@ -15,12 +15,12 @@
 
 ### 输入
 - `workspace/papers/analysis.json` - 论文分析（包含研究领域、关键词）
-- `workspace/papers/search_queries.json` - 检索式
-- 图表需求列表（来自Professor Reviewer）
+- `workspace/papers/search_queries.json` - 检索式（来自 Paper Analyzer）
+- 图表需求列表（来自 Professor Reviewer）
 
 ### 输出
 - `workspace/materials/` - 素材目录
-- `workspace/agent_results/07_material_collection.md` - 素材清单
+- `workspace/agent_results/04_visual_resources.md` - 素材清单（子Agent编号对齐）
 
 ## 搜集来源
 
